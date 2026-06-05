@@ -1,0 +1,97 @@
+name: Release Ряженка
+
+# Крафтит релиз под текущую версию из Versions.inc.
+# Тег = номер версии (например, 6.5.2). Если релиз с таким тегом уже есть —
+# файлы в нём просто перезаписываются.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - Versions.inc
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm:latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Export devkitPro environment
+        run: |
+          echo "DEVKITPRO=/opt/devkitpro" >> "$GITHUB_ENV"
+          echo "DEVKITARM=/opt/devkitpro/devkitARM" >> "$GITHUB_ENV"
+          echo "/opt/devkitpro/devkitARM/bin" >> "$GITHUB_PATH"
+
+      - name: Read version
+        id: ver
+        run: |
+          MJ=$(grep -E '^BLVERSION_MAJOR' Versions.inc | grep -oE '[0-9]+' | head -n1)
+          MN=$(grep -E '^BLVERSION_MINOR' Versions.inc | grep -oE '[0-9]+' | head -n1)
+          HF=$(grep -E '^BLVERSION_HOTFX' Versions.inc | grep -oE '[0-9]+' | head -n1)
+          echo "version=${MJ}.${MN}.${HF}" >> "$GITHUB_OUTPUT"
+          echo "Releasing version ${MJ}.${MN}.${HF}"
+
+      - name: Build
+        run: make -j"$(nproc)"
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: output
+          if-no-files-found: error
+
+  release:
+    name: Craft release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: output
+
+      - name: Assemble release package
+        run: |
+          VER="${{ needs.build.outputs.version }}"
+          mkdir -p pkg/bootloader/sys pkg/bootloader/ini pkg/bootloader/payloads pkg/bootloader/res
+
+          # Renamed payload (also shipped standalone).
+          cp output/hekate.bin "pkg/ryazhenka_${VER}.bin"
+
+          # Core system modules.
+          cp output/nyx.bin                   pkg/bootloader/sys/ 2>/dev/null || true
+          cp output/hekate_libsys_lp0.bso     pkg/bootloader/sys/libsys_lp0.bso 2>/dev/null || true
+          cp output/hekate_libsys_minerva.bso pkg/bootloader/sys/libsys_minerva.bso 2>/dev/null || true
+
+          # Templates.
+          cp res/hekate_ipl_template.ini pkg/bootloader/ 2>/dev/null || true
+          cp res/patches_template.ini    pkg/bootloader/ 2>/dev/null || true
+
+          mkdir -p dist
+          cp "pkg/ryazhenka_${VER}.bin" "dist/ryazhenka_${VER}.bin"
+          ( cd pkg && zip -qr "../dist/ryazhenka_${VER}.zip" . )
+          echo "----- dist/ -----"; ls -la dist
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/make-release.sh
+          scripts/make-release.sh dist "${GITHUB_SHA}"
