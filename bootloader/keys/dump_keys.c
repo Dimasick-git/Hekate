@@ -23,7 +23,6 @@
 #include <sec/tsec.h>
 #include <soc/fuse.h>
 #include <storage/sd.h>
-#include <utils/sprintf.h>
 #include <utils/types.h>
 #include <libs/fatfs/ff.h>
 
@@ -221,23 +220,37 @@ static void _derive_non_unique_keys(key_storage_t *keys) {
 // prod.keys serialization.
 // ---------------------------------------------------------------------------
 
+// s_printf is not linked into the hekate IPL, so format manually.
+static char *_put_hex(char *p, u8 b) {
+    static const char hx[] = "0123456789abcdef";
+    *p++ = hx[b >> 4];
+    *p++ = hx[b & 0xF];
+    return p;
+}
+
 static void _save_key(const char *name, const void *data, u32 len, char *outbuf) {
     if (!key_exists(data))
         return;
     char *p = outbuf + strlen(outbuf);
-    s_printf(p, "%s = ", name);
-    p += strlen(p);
-    for (u32 i = 0; i < len; i++) {
-        s_printf(p, "%02x", ((const u8 *)data)[i]);
-        p += 2;
-    }
-    s_printf(p, "\n");
+    u32 n = strlen(name);
+    memcpy(p, name, n);
+    p += n;
+    *p++ = ' '; *p++ = '='; *p++ = ' ';
+    const u8 *d = (const u8 *)data;
+    for (u32 i = 0; i < len; i++)
+        p = _put_hex(p, d[i]);
+    *p++ = '\n';
+    *p = '\0';
 }
 
 static void _save_key_family(const char *name, const void *data, u32 num_keys, u32 len, char *outbuf) {
     char temp_name[0x40];
+    u32 n = strlen(name);
+    memcpy(temp_name, name, n);
+    temp_name[n] = '_';
     for (u32 i = 0; i < num_keys; i++) {
-        s_printf(temp_name, "%s_%02x", name, i);
+        char *q = _put_hex(temp_name + n + 1, (u8)i);
+        *q = '\0';
         _save_key(temp_name, (const u8 *)data + i * len, len, outbuf);
     }
 }
