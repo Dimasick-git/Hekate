@@ -30,10 +30,9 @@ jobs:
       - name: Read version
         id: ver
         run: |
-          . ./Versions.inc 2>/dev/null || true
-          MJ=$(grep -E 'BLVERSION_MAJOR' Versions.inc | grep -oE '[0-9]+')
-          MN=$(grep -E 'BLVERSION_MINOR' Versions.inc | grep -oE '[0-9]+')
-          HF=$(grep -E 'BLVERSION_HOTFX' Versions.inc | grep -oE '[0-9]+')
+          MJ=$(grep -E '^BLVERSION_MAJOR' Versions.inc | grep -oE '[0-9]+' | head -n1)
+          MN=$(grep -E '^BLVERSION_MINOR' Versions.inc | grep -oE '[0-9]+' | head -n1)
+          HF=$(grep -E '^BLVERSION_HOTFX' Versions.inc | grep -oE '[0-9]+' | head -n1)
           echo "version=${MJ}.${MN}.${HF}" >> "$GITHUB_OUTPUT"
           echo "Building version ${MJ}.${MN}.${HF}"
 
