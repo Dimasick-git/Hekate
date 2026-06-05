@@ -41,6 +41,9 @@ OBJS += bpmp ccplex clock di i2c irq timer \
 # Utilities.
 OBJS += btn dirlist ianos ini util config
 
+# Ряженка: automatic key dumping at launch (DBI keyset).
+OBJS += dump_keys
+
 # OS loaders.
 OBJS += l4t hos hos_config pkg1 pkg2 pkg3 pkg2_ini_kippatch secmon_exo
 

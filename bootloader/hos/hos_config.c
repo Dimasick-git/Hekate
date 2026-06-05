@@ -301,6 +301,19 @@ static int _config_ucid(launch_ctxt_t *ctxt, const char *value)
 	return 0;
 }
 
+// Ряженка: enable automatic key dumping (DBI keyset) for this boot entry.
+static int _config_dumpkeys(launch_ctxt_t *ctxt, const char *value)
+{
+	if (!strcmp(value, "force") || *value == '2')
+		ctxt->dump_keys = 2;
+	else if (*value == '1' || !strcmp(value, "auto"))
+		ctxt->dump_keys = 1;
+	else
+		ctxt->dump_keys = 0;
+
+	return 0;
+}
+
 typedef struct _cfg_handler_t
 {
 	const char *key;
@@ -331,6 +344,7 @@ static const cfg_handler_t _config_handlers[] = {
 	{ "cal0blank",        _config_exo_cal0_blanking },
 	{ "cal0writesys",     _config_exo_cal0_writes_enable },
 	{ "ucid",             _config_ucid },
+	{ "dumpkeys",         _config_dumpkeys },
 	{ NULL, NULL },
 };
 
