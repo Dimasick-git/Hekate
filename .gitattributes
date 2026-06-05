@@ -1,0 +1,10 @@
+# Ряженка: защита наших файлов при автосинхронизации с апстримом.
+# При слиянии изменений из CTCaer/hekate эти пути ВСЕГДА сохраняют нашу версию
+# (используется драйвер слияния "ours", включаемый скриптом sync-upstream.sh).
+# Ryazhenka: protect our files during upstream auto-sync — these paths always
+# keep OUR version on merge (via the "ours" merge driver).
+
+README.md        merge=ours
+.gitattributes   merge=ours
+.github/**        merge=ours
+scripts/**        merge=ours

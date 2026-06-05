@@ -1,0 +1,101 @@
+name: Sync upstream (CTCaer/hekate)
+
+# Автосинхронизация форка Ряженка с оригиналом CTCaer/hekate.
+# Auto-sync of the Ряженка fork with upstream CTCaer/hekate.
+#
+# По умолчанию изменения апстрима оформляются как Pull Request — так наши файлы
+# (README, CI, скрипты) гарантированно не ломаются, а слияние проходит ревью.
+# Режим "push" вливает изменения сразу в текущую ветку (без PR).
+
+on:
+  schedule:
+    # Каждый день в 04:00 UTC.
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Как доставлять изменения апстрима"
+        type: choice
+        default: pr
+        options:
+          - pr
+          - push
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_URL: https://github.com/CTCaer/hekate.git
+  UPSTREAM_BRANCH: master
+  SYNC_BRANCH: sync/upstream
+  # Для запусков по расписанию режим всегда "pr" (безопасно).
+  MODE: ${{ github.event.inputs.mode || 'pr' }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name  "ryazhenka-sync[bot]"
+          git config user.email "ryazhenka-sync@users.noreply.github.com"
+
+      - name: Run sync script
+        id: sync
+        run: |
+          set +e
+          BASE_REF="${{ github.ref_name }}" scripts/sync-upstream.sh
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Up to date
+        if: steps.sync.outputs.has_changes != 'true'
+        run: echo "Апстрим уже полностью влит — делать нечего."
+
+      - name: Report conflicts
+        if: steps.sync.outputs.conflicts == 'true'
+        run: |
+          echo "::error::Автослияние с апстримом остановлено из-за конфликтов в незащищённых файлах."
+          echo "Разреши конфликты вручную:"
+          echo "  git fetch upstream ${UPSTREAM_BRANCH}"
+          echo "  git switch -c ${SYNC_BRANCH}"
+          echo "  git merge upstream/${UPSTREAM_BRANCH}"
+          exit 1
+
+      - name: Push directly (mode=push)
+        if: steps.sync.outputs.has_changes == 'true' && steps.sync.outputs.conflicts != 'true' && env.MODE == 'push'
+        run: |
+          echo "Вливаю апстрим прямо в ${{ github.ref_name }}…"
+          git push origin "HEAD:${{ github.ref_name }}"
+
+      - name: Open / update Pull Request (mode=pr)
+        if: steps.sync.outputs.has_changes == 'true' && steps.sync.outputs.conflicts != 'true' && env.MODE == 'pr'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git push --force origin "${SYNC_BRANCH}"
+          UP="${{ steps.sync.outputs.upstream_head }}"
+          TITLE="sync: подтянуть upstream CTCaer/hekate @ ${UP:0:10}"
+          BODY=$(cat <<EOF
+          Автоматическая синхронизация с оригиналом [CTCaer/hekate](${UPSTREAM_URL}) (ветка \`${UPSTREAM_BRANCH}\`).
+
+          Апстрим HEAD: \`${UP}\`
+
+          Наши файлы (\`README.md\`, \`.github/**\`, \`scripts/**\`) защищены через
+          \`.gitattributes\` (\`merge=ours\`) и в этом слиянии **не менялись**.
+
+          Проверь diff и смёрджи, когда будешь готов.
+          EOF
+          )
+          EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --base "${{ github.ref_name }}" --state open --json number -q '.[0].number' || true)
+          if [ -n "$EXISTING" ]; then
+            echo "Обновляю существующий PR #$EXISTING (ветка перезаписана пушем)."
+            gh pr edit "$EXISTING" --title "$TITLE" --body "$BODY" || true
+          else
+            gh pr create --base "${{ github.ref_name }}" --head "${SYNC_BRANCH}" --title "$TITLE" --body "$BODY"
+          fi

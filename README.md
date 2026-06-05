@@ -1,205 +1,329 @@
-# hekate - Nyx
+# Ряженка — Ryazhenka
+
+> Графический загрузчик и инструментарий для Nintendo Switch.
+> Часть экосистемы **Ряженка**. Форк [hekate — Nyx](https://github.com/CTCaer/hekate) от CTCaer.
 
 ![Image of Hekate](https://user-images.githubusercontent.com/3665130/60391760-bc1e8c00-9afe-11e9-8b7a-b065873081b2.png)
 
+---
 
-Custom Graphical Nintendo Switch bootloader, firmware patcher, tools, and many more.
+## 🇬🇧 English (quick overview)
 
+**Ряженка** is the bootloader of the *Ryazhenka* ecosystem — a custom graphical
+Nintendo Switch bootloader, firmware patcher and toolbox. It is a downstream fork
+of CTCaer's **hekate — Nyx** and keeps full compatibility with hekate
+configuration files, payloads and modules.
 
+### Features
 
-- [Features](#features)
-- [Bootloader folders and files](#bootloader-folders-and-files)
-- [Bootloader configuration](#bootloader-configuration)
-  * [hekate global Configuration keys/values](#hekate-global-configuration-keysvalues-when-entry-is-config)
-  * [Boot entry key/value combinations](#boot-entry-keyvalue-combinations)
-  * [Boot entry key/value combinations for Exosphère](#boot-entry-keyvalue-combinations-for-exosphère)
-  * [Payload storage](#payload-storage)
-  * [Nyx Configuration keys/values](#nyx-configuration-keysvalues-nyxini)
+- **Fully configurable, graphical GUI** (Nyx) with touchscreen and Joy-Con input.
+- **HOS (Switch OS) bootloader** — CFW Sys/Emu, OFW Sys and stock Sys.
+- **Android & Linux (L4T) bootloader**.
+- **Payload launcher**.
+- **eMMC / emuMMC backup & restore tools**.
+- **SD card partition manager** — prepares the SD for HOS, Android and Linux.
+- **emuMMC creation & manager** — create, migrate and repair emuMMC.
+- **USB Mass Storage (UMS)** — turns the Switch into an SD/eMMC card reader.
+- **USB gamepad**, hardware info, benchmarks, AutoRCM and many more tools.
 
+### Build
 
+The project is built with **devkitARM** (devkitPro). On a machine with the
+toolchain installed:
 
-## Features
+```bash
+export DEVKITARM=<path to>/devkitARM
+make -j"$(nproc)"
+```
 
-- **Fully Configurable and Graphical** with Touchscreen and Joycon input support
-- **Launcher Style, Background and Color Themes**
-- **HOS (Switch OS) Bootloader** -- For CFW Sys/Emu, OFW Sys and Stock Sys
-- **Android & Linux Bootloader**
-- **Payload Launcher**
-- **eMMC/emuMMC Backup/Restore Tools**
-- **SD Card Partition Manager** -- Prepares and formats SD Card for any combo of HOS (Sys/emuMMC), Android and Linux
-- **emuMMC Creation & Manager** -- Can also migrate and fix existing emuMMC
-- **Switch Android & Linux flasher**
-- **USB Mass Storage (UMS) for SD/eMMC/emuMMC** -- Converts Switch into a SD Card Reader
-- **USB Gamepad** -- Converts Switch with Joycon into a USB HID Gamepad
-- **Hardware and Peripherals info** (SoC, Fuses, RAM, Display, Touch, eMMC, SD, Battery, PSU, Charger)
-- **Many other tools** like Archive Bit Fixer, Touch Calibration, SD/eMMC Benchmark, AutoRCM enabler and more
+The resulting payload is produced at `output/hekate.bin`.
 
+### Continuous Integration
 
-## Bootloader folders and files
+Every push and pull request is built automatically by GitHub Actions
+(`.github/workflows/build.yml`) inside the official `devkitpro/devkitarm`
+container. The workflow compiles the payload, assembles a ready-to-use SD
+layout under `dist/` and uploads it as a downloadable build artifact named
+`ryazhenka-<version>`.
 
-| Folder/File              | Description                                                           |
-| ------------------------ | --------------------------------------------------------------------- |
-| bootloader               | Main folder.                                                          |
-|  \|__ bootlogo.bmp       | It is used if no `logopath` key is found. User provided. Can be skipped. |
-|  \|__ hekate_ipl.ini     | Main bootloader configuration and boot entries in `Launch` menu.      |
-|  \|__ nyx.ini            | Nyx GUI configuration                                                 |
-|  \|__ patches.ini        | Add external patches. Can be skipped. A template can be found [here](./res/patches_template.ini) |
-|  \|__ update.bin         | If newer, it is loaded at boot. Normally for modchips. Auto updated and created at first boot. |
-| bootloader/ini/          | For individual inis. `More configs` menu. Autoboot is supported.   |
-| bootloader/res/          | Nyx user resources. Icons and more.                                   |
-|  \|__ background.bmp     | Nyx - Custom background. User provided.                               |
-|  \|__ icon_switch.bmp    | Nyx - Default icon for CFWs.                                          |
-|  \|__ icon_payload.bmp   | Nyx - Default icon for Payloads.                                      |
-| bootloader/sys/          | hekate and Nyx system modules folder. !Important!                     |
-|  \|__ emummc.kipm        | emuMMC KIP1 module.                                                   |
-|  \|__ libsys_lp0.bso     | LP0 (sleep mode) module.                                              |
-|  \|__ libsys_minerva.bso | Minerva Training Cell. Used for DRAM Frequency training.              |
-|  \|__ nyx.bin            | Nyx - hekate's GUI.                                                   |
-|  \|__ res.pak            | Nyx resources package.                                                |
-|  \|__ thk.bin            | Atmosphère Tsec Hovi Keygen.                                          |
-|  \|__ /l4t/              | Folder with firmware relevant to L4T (Linux/Android).                 |
-| bootloader/screenshots/  | Folder where Nyx screenshots are saved                                |
-| bootloader/payloads/     | For the `Payloads` menu. All CFW bootloaders, tools, Linux payloads are supported. Autoboot only supported by including them into an ini. |
-| bootloader/libtools/     | Reserved                                                              |
+> **Full documentation (configuration reference, folder layout, Nyx settings) is
+> available in Russian below.**
 
+---
 
+## 🇷🇺 Русский (полная документация)
 
-## Bootloader configuration
+**Ряженка** — графический загрузчик, патчер прошивок и набор инструментов для
+Nintendo Switch. Это форк проекта **hekate — Nyx** (автор — CTCaer), входящий в
+экосистему **Ряженка**. Конфигурационные файлы, payload'ы и модули полностью
+совместимы с оригинальным hekate.
 
-The bootloader can be configured via `Nyx` -> `Options` or 'bootloader/hekate_ipl.ini'. The special section 'config' controls the actual global configuration. Any other ini section represents a boot entry and can only be edited manually via the ini.
+### Содержание
 
+- [Возможности](#возможности)
+- [Сборка](#сборка)
+  - [Локальная сборка](#локальная-сборка)
+  - [Сборка через GitHub Actions](#сборка-через-github-actions)
+- [Папки и файлы загрузчика](#папки-и-файлы-загрузчика)
+- [Конфигурация загрузчика](#конфигурация-загрузчика)
+  - [Глобальная конфигурация (секция `[config]`)](#глобальная-конфигурация-секция-config)
+  - [Параметры загрузочной записи](#параметры-загрузочной-записи)
+  - [Параметры загрузочной записи для Exosphère](#параметры-загрузочной-записи-для-exosphère)
+  - [Хранилище payload](#хранилище-payload)
+  - [Конфигурация Nyx (`nyx.ini`)](#конфигурация-nyx-nyxini)
+- [Загрузочный логотип (bootlogo)](#загрузочный-логотип-bootlogo)
+- [Благодарности и лицензия](#благодарности-и-лицензия)
 
-There are four possible type of entries. "**[ ]**": Boot entry, "**{ }**": Caption, "**#**": Comment, "*newline*": .ini cosmetic newline.
+### Возможности
 
+- **Полностью настраиваемый графический интерфейс** (Nyx) с поддержкой
+  сенсорного экрана и Joy-Con.
+- **Темы оформления** — стиль лаунчера, фон и цветовые схемы.
+- **Загрузчик HOS (ОС Switch)** — CFW Sys/Emu, OFW Sys и сток Sys.
+- **Загрузчик Android и Linux (L4T)**.
+- **Запуск payload'ов**.
+- **Инструменты резервного копирования/восстановления eMMC и emuMMC**.
+- **Менеджер разделов SD-карты** — подготавливает и форматирует карту под любую
+  комбинацию HOS (Sys/emuMMC), Android и Linux.
+- **Создание и управление emuMMC** — может также мигрировать и чинить
+  существующие emuMMC.
+- **Прошивальщик Android и Linux для Switch**.
+- **USB Mass Storage (UMS)** для SD/eMMC/emuMMC — превращает Switch в
+  кардридер.
+- **USB-геймпад** — Switch с Joy-Con работает как USB HID-геймпад.
+- **Информация об оборудовании** (SoC, фьюзы, ОЗУ, дисплей, тач, eMMC, SD,
+  батарея, БП, зарядка).
+- **Множество других инструментов**: исправление Archive Bit, калибровка тача,
+  бенчмарк SD/eMMC, включение AutoRCM и многое другое.
 
-**You can find a template [Here](./res/hekate_ipl_template.ini)**
+### Сборка
 
+#### Локальная сборка
 
-### hekate Configuration keys/values (section *[config]*)
+Для сборки требуется тулчейн **devkitARM** (из состава devkitPro). Установите
+devkitPro и пакет `devkitARM`, затем:
 
-Use `Options` in Nyx to edit the following configuration:
+```bash
+export DEVKITARM=<путь к>/devkitARM
+make -j"$(nproc)"
+```
 
-| Config option      | Description                                                    |
+После сборки в каталоге `output/` появятся:
+
+| Файл                          | Назначение                                   |
+| ----------------------------- | -------------------------------------------- |
+| `hekate.bin`                  | Итоговый payload загрузчика.                  |
+| `nyx.bin`                     | Графический интерфейс Nyx.                    |
+| `hekate_libsys_lp0.bso`       | Модуль LP0 (спящий режим).                    |
+| `hekate_libsys_minerva.bso`   | Модуль Minerva (тренировка частоты DRAM).     |
+
+#### Сборка через GitHub Actions
+
+В репозитории настроен автоматический CI: файл
+[`.github/workflows/build.yml`](.github/workflows/build.yml). При каждом
+`push` и `pull_request` (а также вручную через **workflow_dispatch**)
+запускается сборка внутри официального контейнера `devkitpro/devkitarm`:
+
+1. Выгружается окружение devkitPro (`DEVKITARM`, `DEVKITPRO`).
+2. Считывается версия из `Versions.inc`.
+3. Выполняется `make -j`.
+4. Собирается готовая раскладка SD-карты в каталоге `dist/` (переименованный
+   payload `ryazhenka_<версия>.bin` и папка `bootloader/`).
+5. Результат загружается как артефакт сборки `ryazhenka-<версия>`, который
+   можно скачать со страницы запуска workflow.
+
+### Папки и файлы загрузчика
+
+| Папка/Файл                | Описание                                                              |
+| ------------------------- | -------------------------------------------------------------------- |
+| bootloader                | Главная папка.                                                        |
+|  \|__ bootlogo.bmp        | Используется, если не задан ключ `logopath`. Предоставляется пользователем, можно не указывать. |
+|  \|__ hekate_ipl.ini      | Основная конфигурация загрузчика и загрузочные записи меню `Launch`.  |
+|  \|__ nyx.ini             | Конфигурация графического интерфейса Nyx.                             |
+|  \|__ patches.ini         | Внешние патчи. Не обязателен. Шаблон — [здесь](./res/patches_template.ini). |
+|  \|__ update.bin          | Если новее — загружается при старте. Обычно для модчипов. Создаётся и обновляется автоматически. |
+| bootloader/ini/           | Отдельные ini-файлы. Меню `More configs`. Поддерживается автозагрузка. |
+| bootloader/res/           | Пользовательские ресурсы Nyx: иконки и прочее.                        |
+|  \|__ background.bmp       | Nyx — пользовательский фон.                                           |
+|  \|__ icon_switch.bmp      | Nyx — иконка по умолчанию для CFW.                                    |
+|  \|__ icon_payload.bmp     | Nyx — иконка по умолчанию для payload'ов.                             |
+| bootloader/sys/           | Системные модули hekate и Nyx. !Важно!                                |
+|  \|__ emummc.kipm          | KIP1-модуль emuMMC.                                                   |
+|  \|__ libsys_lp0.bso       | Модуль LP0 (спящий режим).                                            |
+|  \|__ libsys_minerva.bso   | Minerva Training Cell. Тренировка частоты DRAM.                       |
+|  \|__ nyx.bin              | Nyx — графический интерфейс.                                          |
+|  \|__ res.pak              | Пакет ресурсов Nyx.                                                   |
+|  \|__ thk.bin              | Atmosphère Tsec Hovi Keygen.                                          |
+|  \|__ /l4t/                | Папка с прошивками для L4T (Linux/Android).                           |
+| bootloader/screenshots/   | Папка, куда Nyx сохраняет скриншоты.                                  |
+| bootloader/payloads/      | Для меню `Payloads`. Поддерживаются любые загрузчики CFW, инструменты, payload'ы Linux. Автозагрузка — только через ini. |
+| bootloader/libtools/      | Зарезервировано.                                                     |
+
+### Конфигурация загрузчика
+
+Загрузчик настраивается через `Nyx` → `Options` или файл
+`bootloader/hekate_ipl.ini`. Специальная секция `[config]` управляет глобальной
+конфигурацией. Любая другая секция ini — это загрузочная запись, и её можно
+редактировать только вручную.
+
+Существует четыре типа записей: «**[ ]**» — загрузочная запись, «**{ }**» —
+заголовок, «**#**» — комментарий, *пустая строка* — косметический перенос.
+
+**Шаблон находится [здесь](./res/hekate_ipl_template.ini).**
+
+#### Глобальная конфигурация (секция `[config]`)
+
+Эти параметры можно изменять через `Options` в Nyx:
+
+| Параметр           | Описание                                                       |
 | ------------------ | -------------------------------------------------------------- |
-| autoboot=0         | 0: Disable, #: Boot entry number to auto boot.                 |
-| autoboot_list=0    | 0: Read `autoboot` boot entry from hekate_ipl.ini, 1: Read from ini folder (ini files are ASCII ordered). |
-| bootwait=3         | 0: Disable (It also disables bootlogo. Having **VOL-** pressed since injection goes to menu.), #: Time to wait for **VOL-** to enter menu. Max: 20s. |
-| autohosoff=1       | 0: Disable, 1: If woke up from HOS via an RTC alarm, shows logo, then powers off completely, 2: No logo, immediately powers off.|
-| autonogc=1         | 0: Disable, 1: Automatically applies nogc patch if unburnt fuses found and a >= 4.0.0 HOS is booted. |
-| updater2p=0        | 0: Disable, 1: Force updates (if needed) the reboot2payload binary to be hekate. |
-| backlight=100      | Screen backlight level. 0-255.                                 |
-| ------------------ | --------- *The following can be edited via ini only* --------- |
-| noticker=0         | 0: Animated line is drawn during custom bootlogo, signifying time left to skip to menu. 1: Disable. |
-| bootprotect=0      | 0: Disable, 1: Protect bootloader folder from being corrupted by disallowing reading or editing in HOS. |
+| autoboot=0         | 0: выключено, #: номер записи для автозагрузки.                |
+| autoboot_list=0    | 0: читать запись `autoboot` из hekate_ipl.ini, 1: из папки ini (файлы в ASCII-порядке). |
+| bootwait=3         | 0: выключено (также отключает bootlogo; удержание **VOL-** при инъекции открывает меню), #: время ожидания **VOL-** для входа в меню. Макс: 20 с. |
+| autohosoff=1       | 0: выключено, 1: при пробуждении из HOS по будильнику RTC показать лого и полностью выключиться, 2: без лого, мгновенно выключиться. |
+| autonogc=1         | 0: выключено, 1: автоматически применять патч nogc при несожжённых фьюзах и загрузке HOS ≥ 4.0.0. |
+| updater2p=0        | 0: выключено, 1: принудительно обновлять (при необходимости) бинарник reboot2payload до hekate. |
+| backlight=100      | Уровень подсветки экрана. 0–255.                              |
+| ------------------ | --- *Параметры ниже редактируются только через ini* --- |
+| noticker=0         | 0: во время кастомного bootlogo рисуется анимированная линия, показывающая оставшееся время для входа в меню. 1: выключить. |
+| bootprotect=0      | 0: выключено, 1: защитить папку bootloader от повреждения, запретив её чтение/редактирование в HOS. |
 
+#### Параметры загрузочной записи
 
-### Boot entry key/value combinations
+Загрузочную запись нужно добавлять/редактировать вручную с выбранными ключами:
 
-A boot entry needs to be manually added/edited with the user's chosen key/value combos.
-
-| Config option          | Description                                                |
+| Параметр               | Описание                                                   |
 | ---------------------- | ---------------------------------------------------------- |
-| warmboot={FILE path}   | Replaces the warmboot binary                               |
-| secmon={FILE path}     | Replaces the security monitor binary                       |
-| kernel={FILE path}     | Replaces the kernel binary                                 |
-| kip1={FILE path}       | Replaces/Adds kernel initial process. Multiple can be set. |
-| kip1={FOLDER path}/*   | Loads every .kip/.kip1 inside a folder. Compatible with single kip1 keys. |
-| pkg3={FILE path}       | Takes an Atmosphere `package3` binary and `extracts` all needed parts from it. kips, exosphere, warmboot and mesophere. |
-| fss0={FILE path}       | Same as above. !Deprecated! |
-| pkg3ex=1               | Enables loading of experimental content from a PKG3/FSS0 storage |
-| pkg3kip1skip={KIP name} | Skips loading a kip from `pkg3`/`fss0`. Allows multiple and `,` as separator. The name must exactly match the name in `PKG3`. |
-| exofatal={FILE path}   | Replaces the exosphere fatal binary for Mariko             |
+| warmboot={путь к файлу}| Заменяет бинарник warmboot.                                |
+| secmon={путь к файлу}  | Заменяет бинарник security monitor.                        |
+| kernel={путь к файлу}  | Заменяет бинарник ядра.                                    |
+| kip1={путь к файлу}    | Заменяет/добавляет initial process ядра. Можно указывать несколько. |
+| kip1={путь к папке}/*  | Загружает все .kip/.kip1 из папки. Совместимо с одиночными ключами kip1. |
+| pkg3={путь к файлу}    | Берёт бинарник Atmosphère `package3` и извлекает из него всё необходимое: kips, exosphere, warmboot и mesophere. |
+| fss0={путь к файлу}    | То же, что выше. !Устарело! |
+| pkg3ex=1               | Включает загрузку экспериментального содержимого из хранилища PKG3/FSS0. |
+| pkg3kip1skip={имя KIP} | Пропускает загрузку kip из `pkg3`/`fss0`. Несколько — через `,`. Имя должно точно совпадать с именем в `PKG3`. |
+| exofatal={путь к файлу}| Заменяет бинарник exosphere fatal для Mariko.              |
 | ---------------------- | ---------------------------------------------------------- |
-| kip1patch=patchname    | Enables a kip1 patch. Allows multiple and `,` as separator. If actual patch is not found, a warning will show up. |
-| emupath={FOLDER path}  | Forces emuMMC to use the selected one. (=emuMMC/RAW1, =emuMMC/SD00, etc). emuMMC must be created by hekate because it uses the raw_based/file_based files. |
-| emummcforce=1          | Forces the use of emuMMC. If emummc.ini is disabled or not found, then it causes an error. |
-| emummc_force_disable=1 | Disables emuMMC, if it's enabled.                           |
-| stock=1                | OFW via hekate bootloader. Disables unneeded kernel patching and CFW kips when running stock. `If emuMMC is enabled, emummc_force_disable=1` is required. emuMMC is not supported on stock. If additional KIPs are needed other than OFW's, you can define them with `kip1` key. No kip should be used that relies on Atmosphère patching, because it will hang. If `NOGC` is needed, use `kip1patch=nogc`. |
-| fullsvcperm=1          | Disables SVC verification (full services permission). Doesn't work with Mesosphere as kernel. |
-| debugmode=1            | Enables Debug mode. Obsolete when used with exosphere as secmon. |
-| kernelprocid=1         | Enables stock kernel process id send/recv patching. Not needed when `pkg3`/`fss0` is used. |
+| kip1patch=имя_патча    | Включает kip1-патч. Несколько — через `,`. Если патч не найден — выводится предупреждение. |
+| emupath={путь к папке} | Принудительно использовать выбранный emuMMC (=emuMMC/RAW1, =emuMMC/SD00 и т. д.). emuMMC должен быть создан hekate. |
+| emummcforce=1          | Принудительно использовать emuMMC. Если emummc.ini выключен или не найден — ошибка. |
+| emummc_force_disable=1 | Отключает emuMMC, если он включён.                         |
+| stock=1                | OFW через загрузчик hekate. Отключает лишние патчи ядра и CFW-кипы при стоке. `Если emuMMC включён, требуется emummc_force_disable=1`. emuMMC не поддерживается на стоке. Доп. KIP'ы задаются ключом `kip1`. Нельзя использовать kip, зависящие от патчинга Atmosphère, — будет зависание. Если нужен `NOGC`, используйте `kip1patch=nogc`. |
+| fullsvcperm=1          | Отключает проверку SVC (полные права на сервисы). Не работает с Mesosphere в роли ядра. |
+| debugmode=1            | Включает режим отладки. Не нужен с exosphere в роли secmon. |
+| kernelprocid=1         | Включает патчинг send/recv process id стокового ядра. Не нужен при использовании `pkg3`/`fss0`. |
 | ---------------------- | ---------------------------------------------------------- |
-| payload={FILE path}    | Payload launching. Tools, Android/Linux, CFW bootloaders, etc. Any key above when used with that, doesn't get into account. |
+| payload={путь к файлу} | Запуск payload'а: инструменты, Android/Linux, загрузчики CFW и т. д. Любые ключи выше при этом игнорируются. |
 | ---------------------- | ---------------------------------------------------------- |
-| l4t=1                  | L4T Linux/Android native launching.                        |
-| boot_prefixes={FOLDER path} | L4T bootstack directory.                              |
-| ram_oc=0               | L4T RAM Overclocking. Check README_CONFIG.txt for more info. |
-| ram_oc_vdd2=1100       | L4T RAM VDD2 Voltage. Set VDD2 (T210B01) or VDD2/VDDQ (T210) voltage. 1050-1175. |
-| ram_oc_vddq=600        | L4T RAM VDDQ Voltage. Set VDDQ (T210B01). 550-650.         |
-| uart_port=0            | Enables logging on serial port for L4T uboot/kernel.       |
-| sld_type=0x31444C53    | Controls the type of seamless display support. 0x0: Disable, 0x31444C53: L4T seamless display. |
-| Additional keys        | Each distro supports more keys. Check README_CONFIG.txt  for more info. |
+| l4t=1                  | Нативный запуск L4T Linux/Android.                         |
+| boot_prefixes={путь к папке} | Каталог bootstack для L4T.                          |
+| ram_oc=0               | Разгон ОЗУ для L4T. Подробнее — в README_CONFIG.txt.       |
+| ram_oc_vdd2=1100       | Напряжение VDD2 ОЗУ для L4T. VDD2 (T210B01) или VDD2/VDDQ (T210). 1050–1175. |
+| ram_oc_vddq=600        | Напряжение VDDQ ОЗУ для L4T. VDDQ (T210B01). 550–650.      |
+| uart_port=0            | Включает логирование на serial-порт для uboot/ядра L4T.    |
+| sld_type=0x31444C53    | Тип поддержки бесшовного дисплея. 0x0: выключено, 0x31444C53: бесшовный дисплей L4T. |
+| Доп. ключи             | Каждый дистрибутив поддерживает дополнительные ключи. См. README_CONFIG.txt. |
 | ---------------------- | ---------------------------------------------------------- |
-| bootwait=3             | Overrides global bootwait from `[config]`.                 |
-| id=IDNAME              | Identifies boot entry for forced boot via id. Max 7 chars. |
-| logopath={FILE path}   | If it exists, it will load the specified bitmap. Otherwise `bootloader/bootlogo.bmp` will be used if exists |
-| icon={FILE path}       | Force Nyx to use the icon defined here. If this is not found, it will check for a bmp named as the boot entry ([Test 2] -> `bootloader/res/Test 2.bmp`). Otherwise defaults will be used. |
+| bootwait=3             | Переопределяет глобальный `bootwait` из `[config]`.        |
+| id=IDNAME              | Идентификатор записи для принудительной загрузки по id. Макс. 7 символов. |
+| logopath={путь к файлу}| Если файл существует — загружается указанный bitmap. Иначе используется `bootloader/bootlogo.bmp`, если он есть. |
+| icon={путь к файлу}    | Заставляет Nyx использовать указанную иконку. Если не найдена — ищется bmp с именем записи ([Test 2] → `bootloader/res/Test 2.bmp`). Иначе используется значение по умолчанию. |
 
+**Примечание 1**: при использовании маски (`/*`) с `kip1` можно дополнительно
+указать обычный `kip1` после неё, чтобы подгрузить отдельные kip'ы.
 
-**Note1**: When using the wildcard (`/*`) with `kip1` you can still use the normal `kip1` after that to load extra single kips.
+**Примечание 2**: при использовании PKG3/FSS0 разбираются exosphere, warmboot и
+все core-кипы. Первые два можно переопределить ключами `secmon`/`warmboot` после
+`pkg3`/`fss0`. Ключом `kip1` можно подгрузить дополнительный kip или несколько
+через маску (`/*`).
 
-**Note2**: When using PKG3/FSS0 it parses exosphere, warmboot and all core kips. You can override the first 2 by using `secmon`/`warmboot` after defining `pkg3`/`fss0`.
-You can define `kip1` to load an extra kip or many via the wildcard (`/*`) usage.
+**Внимание**: будьте осторожны при переопределении *core-кипов pkg3/fss* через
+`kip1`. Это важно, если кипы несовместимы между собой. Если совместимы —
+переопределять `pkg3`/`fss0` можно без проблем (удобно для тестирования
+промежуточных изменений kip). В таких случаях строка `kip1` должна идти **после**
+строки `pkg3`/`fss0`.
 
-**Warning**: Careful when you override *pkg3/fss core* kips with `kip1`.
-That's in case the kips are incompatible between them. If compatible, you can override `pkg3`/`fss0` kips with no issues (useful for testing with intermediate kip changes). In such cases, the `kip1` line must be **after** `pkg3`/`fss0` line.
+#### Параметры загрузочной записи для Exosphère
 
+Их можно сочетать с загрузочной записью HOS:
 
-### Boot entry key/value combinations for Exosphère
-
-The following can be paired together with a HOS boot entry:
-
-| Config option          | Description                                                |
+| Параметр               | Описание                                                   |
 | ---------------------- | ---------------------------------------------------------- |
-| nouserexceptions=1     | Disables usermode exception handlers when paired with Exosphère. |
-| userpmu=1              | Enables user access to PMU when paired with Exosphère.     |
-| cal0blank=1            | Overrides Exosphère config `blank_prodinfo_{sys/emu}mmc`. If that key doesn't exist, `exosphere.ini` will be used. |
-| cal0writesys=1         | Overrides Exosphère config `allow_writing_to_cal_sysmmc`. If that key doesn't exist, `exosphere.ini` will be used. |
-| usb3force=1            | Overrides system settings mitm config `usb30_force_enabled`. If that key doesn't exist, `system_settings.ini` will be used. |
-| memmode=1              | Enables boot config memory mode for retail units. By default, max ram is limited to 4GB. Enabling this will automatically choose size. |
+| nouserexceptions=1     | Отключает пользовательские обработчики исключений при работе с Exosphère. |
+| userpmu=1              | Разрешает пользователю доступ к PMU при работе с Exosphère. |
+| cal0blank=1            | Переопределяет ключ Exosphère `blank_prodinfo_{sys/emu}mmc`. Если его нет — используется `exosphere.ini`. |
+| cal0writesys=1         | Переопределяет ключ Exosphère `allow_writing_to_cal_sysmmc`. Если его нет — используется `exosphere.ini`. |
+| usb3force=1            | Переопределяет ключ mitm `usb30_force_enabled`. Если его нет — используется `system_settings.ini`. |
+| memmode=1              | Включает режим памяти boot config для retail-консолей. По умолчанию ОЗУ ограничено 4 ГБ; при включении размер выбирается автоматически. |
 
+**Примечание**: `cal0blank`, `cal0writesys`, `usb3force` переопределяют
+`exosphere.ini` или `system_settings.ini`. 0: выключено, 1: включено, ключ
+отсутствует: использовать исходное значение.
 
-**Note**: `cal0blank`, `cal0writesys`, `usb3force`, as stated override the `exosphere.ini` or `system_settings.ini`. 0: Disable, 1: Enable, Key Missing: Use original value.
+**Примечание 2**: `blank_prodinfo_{sys/emu}mmc`, `allow_writing_to_cal_sysmmc` и
+`usb30_force_enabled` в `exosphere.ini` и `system_settings.ini` соответственно —
+единственные ключи конфигурации Atmosphère, которые могут влиять на загрузку
+hekate извне, **если** соответствующие ключи в конфиге hekate отсутствуют.
 
+#### Хранилище payload
 
-**Note2**: `blank_prodinfo_{sys/emu}mmc`, `allow_writing_to_cal_sysmmc` and `usb30_force_enabled` in `exosphere.ini` and `system_settings.ini` respectively, are the only atmosphere config keys that can affect hekate booting configuration externally, **if** the equivalent keys in hekate config are missing.
+hekate хранит в бинарнике загрузочное хранилище, помогающее настраивать его вне
+окружения BPMP:
 
-
-## Payload storage
-
-hekate has a boot storage in the binary that helps it configure it outside of BPMP environment:
-
-| Offset / Name           | Description                                                       |
-| ----------------------- | ----------------------------------------------------------------- |
+| Смещение / Имя          | Описание                                                          |
+| ----------------------- | ---------------------------------------------------------------- |
 | '0x94' boot_cfg         | bit0: `Force AutoBoot`, bit1: `Show launch log`, bit2: `Boot from ID`, bit3: `Boot to emuMMC`. |
-| '0x95' autoboot         | If `Force AutoBoot`, 0: Force go to menu, else boot that entry.   |
-| '0x96' autoboot_list    | If `Force AutoBoot` and `autoboot` then it boots from ini folder. |
-| '0x97' extra_cfg        | When menu is forced: bit5: `Run UMS`.                             |
-| '0x98' xt_str[128]      | Depends on the set cfg bits.                                      |
-| '0x98' ums[1]           | When `Run UMS` is set, it will launch the selected UMS. 0: SD, 1/2/3: eMMC BOOT0/BOOT1/GPP, 4/5/6: emuMMC BOOT0/BOOT1/GPP,  |
-| '0x98' id[8]            | When `Boot from ID` is set, it will search all inis automatically and find the boot entry with that id and boot it. Must be NULL terminated. |
-| '0xA0' emummc_path[120] | When `Boot to emuMMC` is set, it will override the current emuMMC (boot entry or emummc.ini). Must be NULL terminated. |
+| '0x95' autoboot         | При `Force AutoBoot` 0: принудительно в меню, иначе — загрузить эту запись. |
+| '0x96' autoboot_list    | При `Force AutoBoot` и `autoboot` — загрузка из папки ini.        |
+| '0x97' extra_cfg        | Когда меню принудительно: bit5: `Run UMS`.                        |
+| '0x98' xt_str[128]      | Зависит от установленных бит cfg.                                 |
+| '0x98' ums[1]           | При `Run UMS` запускает выбранный UMS. 0: SD, 1/2/3: eMMC BOOT0/BOOT1/GPP, 4/5/6: emuMMC BOOT0/BOOT1/GPP. |
+| '0x98' id[8]            | При `Boot from ID` автоматически ищет во всех ini запись с этим id и загружает её. Должна оканчиваться NULL. |
+| '0xA0' emummc_path[120] | При `Boot to emuMMC` переопределяет текущий emuMMC (запись или emummc.ini). Должен оканчиваться NULL. |
 
+#### Конфигурация Nyx (`nyx.ini`)
 
-## Nyx Configuration keys/values (nyx.ini)
+Эти параметры можно изменять через `Nyx Settings` в Nyx:
 
-Use `Nyx Settings` in Nyx to edit the following configuration:
-
-| Config option      | Description                                                |
+| Параметр           | Описание                                                   |
 | ------------------ | ---------------------------------------------------------- |
-| themebg=2d2d2d     | Sets Nyx background color in HEX. 0x0B0B0B to 0xC7C7C7.    |
-| themecolor=167     | Sets Nyx color of text highlights.                         |
-| entries5col=0      | 1: Sets Launch entry columns from 4 to 5 per line. For a total of 10 entries. |
-| timeoffset=0       | Sets time offset in HEX. Must be in epoch format           |
-| timedst=1          | Enables automatic daylight saving hour adjustment          |
-| homescreen=0       | Sets home screen. 0: Home menu, 1: All configs (merges Launch and More configs), 2: Launch, 3: More Configs. |
-| verification=1     | 0: Disable Backup/Restore verification, 1: Sparse (block based, fast and mostly reliable), 2: Full (sha256 based, slow and 100% reliable). |
-| ------------------ | ----- *The following can be edited via nyx.ini only* ----- |
-| umsemmcrw=0        | 1: eMMC/emuMMC UMS will be mounted as writable by default. |
-| jcdisable=0        | 1: Disables Joycon driver completely.                      |
-| jcforceright=0     | 1: Forces right joycon to be used as main mouse control.   |
-| bpmpclock=1        | 0: Auto, 1: 589 MHz, 2: 576 MHz, 3: 563 MHz, 4: 544 MHz, 5: 408 MHz. Use 2 to 5 if Nyx hangs or some functions like UMS/Backup Verification fail. |
+| themebg=2d2d2d     | Цвет фона Nyx в HEX. 0x0B0B0B – 0xC7C7C7.                  |
+| themecolor=167     | Цвет подсветки текста Nyx.                                 |
+| entries5col=0      | 1: 5 столбцов записей Launch вместо 4. Всего до 10 записей. |
+| timeoffset=0       | Смещение времени в HEX. В формате epoch.                   |
+| timedst=1          | Автоматический переход на летнее/зимнее время.             |
+| homescreen=0       | Домашний экран. 0: главное меню, 1: все конфиги (Launch + More configs), 2: Launch, 3: More Configs. |
+| verification=1     | 0: отключить проверку резервного копирования/восстановления, 1: разреженная (поблочная, быстрая и надёжная), 2: полная (на основе sha256, медленная и на 100% надёжная). |
+| ------------------ | --- *Параметры ниже редактируются только через nyx.ini* --- |
+| umsemmcrw=0        | 1: eMMC/emuMMC UMS по умолчанию монтируется с правом записи. |
+| jcdisable=0        | 1: полностью отключает драйвер Joy-Con.                     |
+| jcforceright=0     | 1: использовать правый Joy-Con как основное управление мышью. |
+| bpmpclock=1        | 0: авто, 1: 589 МГц, 2: 576 МГц, 3: 563 МГц, 4: 544 МГц, 5: 408 МГц. Используйте 2–5, если Nyx зависает или сбоят UMS/проверка бэкапа. |
 
+### Загрузочный логотип (bootlogo)
+
+Bootlogo может быть любого размера, но не больше **720 × 1280**.
+
+Если он меньше 720 × 1280, он автоматически центрируется, а фон принимает цвет
+первого пикселя.
+
+Процесс таков: создайте логотип в альбомной ориентации, затем поверните его на
+90° против часовой стрелки.
+
+Поддерживаемый формат — 32-битный BMP (ARGB). Классические 24-битные (RGB) BMP не
+поддерживаются из соображений производительности.
+
+**Как настроить:** если в загрузочной записи указан `logopath=`, загружается этот
+файл. Если он не найден или формат некорректен, загружается
+`bootloader/bootlogo.bmp` (своего рода глобальный bootlogo). Если и его нет —
+используется логотип по умолчанию.
+
+### Благодарности и лицензия
+
+Проект **Ряженка** основан на **hekate — Nyx** и распространяется на тех же
+условиях. Полный текст лицензии — в файле [`LICENSE`](./LICENSE). Все права
+оригинальных авторов сохранены.
 
 ```
 hekate  (c) 2018,      naehrwert, st4rk.

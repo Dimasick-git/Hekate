@@ -1,0 +1,74 @@
+name: Build Ряженка (hekate)
+
+# Сборка загрузчика Ряженка (форк hekate/Nyx) через devkitARM.
+# Build of the Ряженка bootloader (hekate/Nyx fork) using devkitARM.
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build payload
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm:latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Export devkitPro environment
+        run: |
+          echo "DEVKITPRO=/opt/devkitpro" >> "$GITHUB_ENV"
+          echo "DEVKITARM=/opt/devkitpro/devkitARM" >> "$GITHUB_ENV"
+          echo "/opt/devkitpro/devkitARM/bin" >> "$GITHUB_PATH"
+
+      - name: Read version
+        id: ver
+        run: |
+          . ./Versions.inc 2>/dev/null || true
+          MJ=$(grep -E 'BLVERSION_MAJOR' Versions.inc | grep -oE '[0-9]+')
+          MN=$(grep -E 'BLVERSION_MINOR' Versions.inc | grep -oE '[0-9]+')
+          HF=$(grep -E 'BLVERSION_HOTFX' Versions.inc | grep -oE '[0-9]+')
+          echo "version=${MJ}.${MN}.${HF}" >> "$GITHUB_OUTPUT"
+          echo "Building version ${MJ}.${MN}.${HF}"
+
+      - name: Build
+        run: |
+          make -j"$(nproc)"
+
+      - name: Package SD layout
+        run: |
+          VER="${{ steps.ver.outputs.version }}"
+          mkdir -p dist/bootloader/sys
+          mkdir -p dist/bootloader/ini
+          mkdir -p dist/bootloader/payloads
+          mkdir -p dist/bootloader/res
+
+          # Renamed payload at the SD root.
+          cp output/hekate.bin "dist/ryazhenka_${VER}.bin"
+
+          # Core system modules produced by the build.
+          cp output/nyx.bin                   dist/bootloader/sys/ 2>/dev/null || true
+          cp output/hekate_libsys_lp0.bso     dist/bootloader/sys/libsys_lp0.bso 2>/dev/null || true
+          cp output/hekate_libsys_minerva.bso dist/bootloader/sys/libsys_minerva.bso 2>/dev/null || true
+
+          # Templates and resources shipped with the project.
+          cp res/hekate_ipl_template.ini dist/bootloader/ 2>/dev/null || true
+          cp res/patches_template.ini    dist/bootloader/ 2>/dev/null || true
+
+          echo "----- output/ -----"
+          ls -la output || true
+          echo "----- dist/ -----"
+          find dist -type f
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ryazhenka-${{ steps.ver.outputs.version }}
+          path: dist
+          if-no-files-found: error
