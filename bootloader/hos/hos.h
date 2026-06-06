@@ -121,8 +121,6 @@ typedef struct _launch_ctxt_t
 
 	int ucid;
 
-	int dump_keys; // Ряженка: 0 off, 1 once, 2 force.
-
 	exo_ctxt_t exo_ctx;
 
 	ini_sec_t *cfg;

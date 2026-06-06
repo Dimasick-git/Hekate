@@ -719,6 +719,36 @@ static void _check_for_updated_bootloader()
 	}
 }
 
+// Ряженка: on first boot, if no prod.keys exist yet, chainload the bundled
+// Lockpick build to dump them. Lockpick detects the request flag, dumps keys
+// to sd:/switch/prod.keys, removes the flag and reboots back to hekate.
+static void _autokeys_run()
+{
+	// Disabled via [config] autokeys=0.
+	if (!h_cfg.autokeys)
+		return;
+
+	// Keys already present -> nothing to do.
+	if (!f_stat("switch/prod.keys", NULL))
+		return;
+
+	// Bundled Lockpick build is required.
+	if (f_stat("bootloader/sys/lockpick.bin", NULL))
+		return;
+
+	// Signal the bundled Lockpick to auto-dump and reboot back.
+	FIL fp;
+	if (f_open(&fp, "bootloader/sys/autokeys.request", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
+		f_close(&fp);
+
+	gfx_clear_grey(0x1B);
+	gfx_con_setpos(0, 0);
+	gfx_printf("%kRyazhenka:%k Lockpick autodump...\n", 0xFFFFDD00, 0xFFCCCCCC);
+
+	// Chainload Lockpick (does not return on success).
+	_launch_payload("bootloader/sys/lockpick.bin", false, true);
+}
+
 static void _auto_launch()
 {
 	struct _bmp_data
@@ -784,6 +814,8 @@ static void _auto_launch()
 						h_cfg.updater2p   = atoi(kv->val);
 					else if (!strcmp("bootprotect",   kv->key))
 						h_cfg.bootprotect = atoi(kv->val);
+					else if (!strcmp("autokeys",      kv->key))
+						h_cfg.autokeys    = atoi(kv->val);
 				}
 				boot_entry_id++;
 
@@ -796,6 +828,9 @@ static void _auto_launch()
 
 				// Apply bootloader protection against corruption.
 				_bootloader_corruption_protect();
+
+				// Ряженка: auto-dump keys via the bundled Lockpick on first boot.
+				_autokeys_run();
 
 				// If ini list, exit here.
 				if (!boot_from_id && h_cfg.autoboot_list)

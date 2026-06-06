@@ -25,7 +25,6 @@
 #include "hos.h"
 #include "hos_config.h"
 #include "secmon_exo.h"
-#include "../keys/dump_keys.h"
 #include "../frontend/fe_tools.h"
 #include "../config.h"
 #include "../storage/emummc.h"
@@ -808,11 +807,6 @@ void hos_launch(ini_sec_t *cfg)
 	}
 
 	gfx_printf("Loaded config and pkg1\n%s mode\n", ctxt.stock ? "Stock" : "CFW");
-
-	// Ряженка: automatic key dumping (DBI keyset) before HOS keygen, while the
-	// SE keyslots are still pristine. Never blocks the boot on failure.
-	if (ctxt.dump_keys)
-		ryazhenka_dump_keys(ctxt.dump_keys, emummc_enabled);
 
 	// Check if secmon is exosphere.
 	if (ctxt.secmon)

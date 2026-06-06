@@ -25,7 +25,7 @@ hekate configuration files, payloads and modules.
 - **emuMMC creation & manager** — create, migrate and repair emuMMC.
 - **USB Mass Storage (UMS)** — turns the Switch into an SD/eMMC card reader.
 - **USB gamepad**, hardware info, benchmarks, AutoRCM and many more tools.
-- **Automatic key dumping at launch** (`dumpkeys=`) — derives the NCA keyset (DBI-style `prod.keys`) before booting HOS. Ported from Lockpick_RCM; opt-in and never blocks boot.
+- **Automatic key dumping on first boot** (`autokeys`) — if no `prod.keys` exist yet, hekate chainloads the bundled Lockpick build, which dumps `sd:/switch/prod.keys` and reboots back. Enabled by default; set `autokeys=0` to disable.
 
 ### Build
 
@@ -136,7 +136,7 @@ make -j"$(nproc)"
 
 Пакет — **полная готовая SD-раскладка**: `payload.bin`, `bootloader/update.bin`,
 собранные `bootloader/sys/{nyx.bin, libsys_lp0.bso, libsys_minerva.bso}`, а также
-prebuilt-файлы (`res.pak`, `emummc.kipm`, `thk.bin`, `l4t/*`, иконки Nyx),
+prebuilt-файлы (`res.pak`, `emummc.kipm`, `thk.bin`, `lockpick.bin`, `l4t/*`, иконки Nyx),
 завендоренные в `res/sd/` из официального релиза CTCaer. Эти бинарники **не
 собираются из исходников** (CTCaer поставляет их готовыми) — они приложены
 как есть и распространяются на условиях GPLv2.
@@ -163,6 +163,7 @@ prebuilt-файлы (`res.pak`, `emummc.kipm`, `thk.bin`, `l4t/*`, иконки 
 |  \|__ nyx.bin              | Nyx — графический интерфейс.                                          |
 |  \|__ res.pak              | Пакет ресурсов Nyx.                                                   |
 |  \|__ thk.bin              | Atmosphère Tsec Hovi Keygen.                                          |
+|  \|__ lockpick.bin         | **Ряженка:** встроенный Lockpick для автоснятия ключей (`autokeys`).   |
 |  \|__ /l4t/                | Папка с прошивками для L4T (Linux/Android).                           |
 | bootloader/screenshots/   | Папка, куда Nyx сохраняет скриншоты.                                  |
 | bootloader/payloads/      | Для меню `Payloads`. Поддерживаются любые загрузчики CFW, инструменты, payload'ы Linux. Автозагрузка — только через ini. |
@@ -196,6 +197,7 @@ prebuilt-файлы (`res.pak`, `emummc.kipm`, `thk.bin`, `l4t/*`, иконки 
 | ------------------ | --- *Параметры ниже редактируются только через ini* --- |
 | noticker=0         | 0: во время кастомного bootlogo рисуется анимированная линия, показывающая оставшееся время для входа в меню. 1: выключить. |
 | bootprotect=0      | 0: выключено, 1: защитить папку bootloader от повреждения, запретив её чтение/редактирование в HOS. |
+| autokeys=1         | **Ряженка:** 1: если на SD нет `switch/prod.keys`, при первой загрузке автоматически чейнлоадится встроенный Lockpick (`bootloader/sys/lockpick.bin`), снимает ключи и перезагружается обратно. 0: выключить. |
 
 #### Параметры загрузочной записи
 
@@ -238,7 +240,6 @@ prebuilt-файлы (`res.pak`, `emummc.kipm`, `thk.bin`, `l4t/*`, иконки 
 | id=IDNAME              | Идентификатор записи для принудительной загрузки по id. Макс. 7 символов. |
 | logopath={путь к файлу}| Если файл существует — загружается указанный bitmap. Иначе используется `bootloader/bootlogo.bmp`, если он есть. |
 | icon={путь к файлу}    | Заставляет Nyx использовать указанную иконку. Если не найдена — ищется bmp с именем записи ([Test 2] → `bootloader/res/Test 2.bmp`). Иначе используется значение по умолчанию. |
-| dumpkeys=0             | **Ряженка:** автоснятие ключей при загрузке записи. `0`: выкл, `1`/`auto`: снять один раз, если `sd:/switch/prod.keys` ещё нет, `2`/`force`: снимать всегда (перезапись). Снимается DBI-набор (master keys, `header_key`, `key_area_key_*`, `titlekek`, `package2_key`). Деривация портирована из Lockpick_RCM и не блокирует загрузку при ошибке. На **Erista** использует `bootloader/sys/thk.bin` (входит в релиз); на **Mariko** не нужен. |
 
 **Примечание 1**: при использовании маски (`/*`) с `kip1` можно дополнительно
 указать обычный `kip1` после неё, чтобы подгрузить отдельные kip'ы.
