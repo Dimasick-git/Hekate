@@ -1,14 +1,48 @@
---- a/source/main.c
-+++ b/source/main.c
-@@ -430,6 +430,15 @@
+diff -ruN pristine/source/keys/keys.c patched/source/keys/keys.c
+--- a/source/keys/keys.c	2026-04-23 19:04:36.000000000 +0000
++++ b/source/keys/keys.c	2026-06-06 13:16:13.519899665 +0000
+@@ -56,6 +56,7 @@
+ static u32 _key_count = 0, _titlekey_count = 0;
+ static u32 start_time, end_time;
+ u32 color_idx = 0;
++bool autokeys_silent = false; // Ryazhenka: skip button prompts in autokeys mode.
+ 
+ static void _save_key(const char *name, const void *data, u32 len, char *outbuf) {
+     if (!key_exists(data))
+@@ -834,6 +835,9 @@
+     }
+ 
+     minerva_change_freq(FREQ_800);
++    // Ryazhenka: in autokeys mode, skip the prompt and return immediately.
++    if (autokeys_silent)
++    	return;
+     gfx_printf("\n%kPress VOL+ to save a screenshot\n or another button to return to the menu.\n\n", colors[(color_idx++) % 6]);
+     u8 btn = btn_wait();
+     if (btn == BTN_VOL_UP) {
+diff -ruN pristine/source/keys/keys.h patched/source/keys/keys.h
+--- a/source/keys/keys.h	2026-04-23 19:04:36.000000000 +0000
++++ b/source/keys/keys.h	2026-06-06 13:16:13.520165804 +0000
+@@ -44,6 +44,7 @@
+ // save key family with different name than variable
+ #define SAVE_KEY_FAMILY_VAR(name, varname, start) _save_key_family(#name, varname, start, ARRAY_SIZE(varname), sizeof(*(varname)), text_buffer)
+ 
++extern bool autokeys_silent; // Ryazhenka: silent autokeys mode.
+ void dump_keys();
+ int save_mariko_partial_keys(u32 start, u32 count, bool append);
+ void derive_amiibo_keys();
+diff -ruN pristine/source/main.c patched/source/main.c
+--- a/source/main.c	2026-04-23 19:04:36.000000000 +0000
++++ b/source/main.c	2026-06-06 13:16:13.519430134 +0000
+@@ -430,6 +430,16 @@
  	h_cfg.emummc_force_disable = emu_cfg.sector == 0 && !emu_cfg.path;
  	emu_cfg.enabled = !h_cfg.emummc_force_disable;
  
 +	// Ryazhenka autokeys: if hekate requested an automatic key dump, dump the
-+	// keys silently and reboot straight back to hekate without showing the menu.
++	// keys silently (no button prompts) and reboot straight back to hekate.
 +	if (!f_stat("bootloader/sys/autokeys.request", NULL))
 +	{
 +		f_unlink("bootloader/sys/autokeys.request");
++		autokeys_silent = true;
 +		dump_keys();
 +		launch_payload("bootloader/update.bin", false);
 +	}
