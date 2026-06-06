@@ -1,6 +1,6 @@
 name: Build hekate
 
-# Сборка hekate — модуля экосистемы Ряженка (форк hekate/Nyx) через devkitARM.
+# Сборка hekate — модуля экосистемы Ряженка (форк hekate/Nyx).
 # Build of hekate, a module of the Ряженка ecosystem (hekate/Nyx fork).
 
 on:
@@ -11,15 +11,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build payload
+  hekate:
+    name: Build hekate payload
     runs-on: ubuntu-latest
     container:
       image: devkitpro/devkitarm:latest
-
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Export devkitPro environment
         run: |
@@ -34,24 +34,75 @@ jobs:
           MN=$(grep -E '^BLVERSION_MINOR' Versions.inc | grep -oE '[0-9]+' | head -n1)
           HF=$(grep -E '^BLVERSION_HOTFX' Versions.inc | grep -oE '[0-9]+' | head -n1)
           echo "version=${MJ}.${MN}.${HF}" >> "$GITHUB_OUTPUT"
-          echo "Building version ${MJ}.${MN}.${HF}"
 
       - name: Build
-        run: |
-          make -j"$(nproc)"
+        run: make -j"$(nproc)"
 
-      - name: Package SD layout
+      - name: Upload hekate output
+        uses: actions/upload-artifact@v4
+        with:
+          name: hekate-output
+          path: output
+          if-no-files-found: error
+
+  lockpick:
+    name: Build patched Lockpick (autokeys)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Lockpick 1.9.20 source and apply autokeys patch
+        run: |
+          curl -sSL "https://github.com/THZoria/Lockpick_RCMaster/archive/refs/tags/1.9.20.tar.gz" -o lp.tgz
+          mkdir lp && tar -xf lp.tgz -C lp --strip-components=1
+          patch -p1 -d lp < res/lockpick-autokeys.patch
+
+      - name: Build in devkitARM container
+        run: |
+          docker run --rm -v "$PWD/lp:/work" -w /work devkitpro/devkitarm:latest \
+            sh -c 'make -j"$(nproc)"'
+
+      - name: Collect lockpick.bin
+        run: |
+          mkdir -p out
+          cp lp/output/Lockpick_RCM.bin out/lockpick.bin
+          ls -la out
+
+      - name: Upload lockpick
+        uses: actions/upload-artifact@v4
+        with:
+          name: lockpick-build
+          path: out/lockpick.bin
+          if-no-files-found: error
+
+  package:
+    name: Package SD layout
+    needs: [hekate, lockpick]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download hekate output
+        uses: actions/download-artifact@v4
+        with:
+          name: hekate-output
+          path: output
+
+      - name: Download patched Lockpick
+        uses: actions/download-artifact@v4
+        with:
+          name: lockpick-build
+          path: output
+
+      - name: Package
         run: |
           chmod +x scripts/package-sd.sh
           scripts/package-sd.sh dist
-          echo "----- output/ -----"
-          ls -la output || true
-          echo "----- dist/ -----"
-          find dist -type f | sort
+          echo "----- dist/ -----"; find dist -type f | sort
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: hekate-${{ steps.ver.outputs.version }}
+          name: hekate-${{ needs.hekate.outputs.version }}
           path: dist
           if-no-files-found: error

@@ -22,8 +22,14 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 rm -rf "$DEST"
 mkdir -p "$DEST/bootloader"
 
-# 1. Prebuilt SD skeleton (res.pak, emummc.kipm, thk.bin, l4t/, default icons).
+# 1. Prebuilt SD skeleton (res.pak, emummc.kipm, thk.bin, l4t/, default icons,
+#    and a fallback autokeys Lockpick build).
 cp -r "$ROOT/res/sd/bootloader/." "$DEST/bootloader/"
+
+# Prefer a freshly built patched Lockpick (autokeys) if CI produced one.
+if [ -f "$ROOT/output/lockpick.bin" ]; then
+  cp "$ROOT/output/lockpick.bin" "$DEST/bootloader/sys/lockpick.bin"
+fi
 
 # 2. Overlay the freshly built binaries.
 mkdir -p "$DEST/bootloader/sys"

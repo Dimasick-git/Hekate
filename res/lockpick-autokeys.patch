@@ -1,0 +1,18 @@
+--- a/source/main.c
++++ b/source/main.c
+@@ -430,6 +430,15 @@
+ 	h_cfg.emummc_force_disable = emu_cfg.sector == 0 && !emu_cfg.path;
+ 	emu_cfg.enabled = !h_cfg.emummc_force_disable;
+ 
++	// Ryazhenka autokeys: if hekate requested an automatic key dump, dump the
++	// keys silently and reboot straight back to hekate without showing the menu.
++	if (!f_stat("bootloader/sys/autokeys.request", NULL))
++	{
++		f_unlink("bootloader/sys/autokeys.request");
++		dump_keys();
++		launch_payload("bootloader/update.bin", false);
++	}
++
+ 	// Grey out emummc option if not present.
+ 	if (h_cfg.emummc_force_disable)
+ 	{

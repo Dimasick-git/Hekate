@@ -50,9 +50,37 @@ jobs:
           path: output
           if-no-files-found: error
 
+  lockpick:
+    name: Build patched Lockpick (autokeys)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Lockpick 1.9.20 source and apply autokeys patch
+        run: |
+          curl -sSL "https://github.com/THZoria/Lockpick_RCMaster/archive/refs/tags/1.9.20.tar.gz" -o lp.tgz
+          mkdir lp && tar -xf lp.tgz -C lp --strip-components=1
+          patch -p1 -d lp < res/lockpick-autokeys.patch
+
+      - name: Build in devkitARM container
+        run: |
+          docker run --rm -v "$PWD/lp:/work" -w /work devkitpro/devkitarm:latest \
+            sh -c 'make -j"$(nproc)"'
+
+      - name: Collect lockpick.bin
+        run: |
+          mkdir -p out && cp lp/output/Lockpick_RCM.bin out/lockpick.bin
+
+      - name: Upload lockpick
+        uses: actions/upload-artifact@v4
+        with:
+          name: lockpick-build
+          path: out/lockpick.bin
+          if-no-files-found: error
+
   release:
     name: Craft release
-    needs: build
+    needs: [build, lockpick]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -63,6 +91,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-output
+          path: output
+
+      - name: Download patched Lockpick
+        uses: actions/download-artifact@v4
+        with:
+          name: lockpick-build
           path: output
 
       - name: Assemble release package
