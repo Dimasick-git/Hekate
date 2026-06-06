@@ -722,18 +722,45 @@ static void _check_for_updated_bootloader()
 // Ряженка: on first boot, if no prod.keys exist yet, chainload the bundled
 // Lockpick build to dump them. Lockpick detects the request flag, dumps keys
 // to sd:/switch/prod.keys, removes the flag and reboots back to hekate.
+// Read [config] autokeys from hekate_ipl.ini (default: enabled).
+static bool _autokeys_enabled()
+{
+	bool enabled = true;
+	LIST_INIT(ini_sections);
+
+	if (!ini_parse(&ini_sections, "bootloader/hekate_ipl.ini", false))
+	{
+		LIST_FOREACH_ENTRY(ini_sec_t, sec, &ini_sections, link)
+		{
+			if (sec->type != INI_CHOICE || strcmp(sec->name, "config"))
+				continue;
+			LIST_FOREACH_ENTRY(ini_kv_t, kv, &sec->kvs, link)
+				if (!strcmp("autokeys", kv->key))
+					enabled = atoi(kv->val);
+			break;
+		}
+	}
+
+	return enabled;
+}
+
+// Ряженка: on first boot, if no prod.keys exist yet, chainload the bundled
+// Lockpick build to dump them. Runs early (before the self-update check and
+// autoboot) so it triggers on the very first boot. Lockpick detects the
+// request flag, dumps keys to sd:/switch/prod.keys, removes the flag and
+// reboots back to hekate; the next boot finds the keys and skips this.
 static void _autokeys_run()
 {
-	// Disabled via [config] autokeys=0.
-	if (!h_cfg.autokeys)
-		return;
-
 	// Keys already present -> nothing to do.
 	if (!f_stat("switch/prod.keys", NULL))
 		return;
 
 	// Bundled Lockpick build is required.
 	if (f_stat("bootloader/sys/lockpick.bin", NULL))
+		return;
+
+	// Honor [config] autokeys=0.
+	if (!_autokeys_enabled())
 		return;
 
 	// Signal the bundled Lockpick to auto-dump and reboot back.
@@ -743,7 +770,8 @@ static void _autokeys_run()
 
 	gfx_clear_grey(0x1B);
 	gfx_con_setpos(0, 0);
-	gfx_printf("%kRyazhenka:%k Lockpick autodump...\n", 0xFFFFDD00, 0xFFCCCCCC);
+	gfx_printf("%kRyazhenka:%k dumping keys via Lockpick...\nThe console will reboot once.\n",
+		0xFFFFDD00, 0xFFCCCCCC);
 
 	// Chainload Lockpick (does not return on success).
 	_launch_payload("bootloader/sys/lockpick.bin", false, true);
@@ -814,8 +842,6 @@ static void _auto_launch()
 						h_cfg.updater2p   = atoi(kv->val);
 					else if (!strcmp("bootprotect",   kv->key))
 						h_cfg.bootprotect = atoi(kv->val);
-					else if (!strcmp("autokeys",      kv->key))
-						h_cfg.autokeys    = atoi(kv->val);
 				}
 				boot_entry_id++;
 
@@ -828,9 +854,6 @@ static void _auto_launch()
 
 				// Apply bootloader protection against corruption.
 				_bootloader_corruption_protect();
-
-				// Ряженка: auto-dump keys via the bundled Lockpick on first boot.
-				_autokeys_run();
 
 				// If ini list, exit here.
 				if (!boot_from_id && h_cfg.autoboot_list)
@@ -1543,6 +1566,10 @@ skip_lp0_minerva_config:
 	// Load saved configuration and auto boot if enabled.
 	if (!(h_cfg.errors & ERR_SD_BOOT_EN))
 	{
+		// Ряженка: auto-dump keys via the bundled Lockpick on the very first
+		// boot, before the self-update check can relaunch hekate.
+		_autokeys_run();
+
 		_check_for_updated_bootloader();
 		_auto_launch();
 	}

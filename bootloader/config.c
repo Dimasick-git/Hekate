@@ -36,7 +36,6 @@ void set_default_configuration()
 	h_cfg.autonogc      = 1;
 	h_cfg.updater2p     = 0;
 	h_cfg.bootprotect   = 0;
-	h_cfg.autokeys      = 1; // Ряженка: enabled by default; set autokeys=0 to disable.
 
 	h_cfg.errors = 0;
 	h_cfg.eks = NULL;

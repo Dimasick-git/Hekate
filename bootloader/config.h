@@ -33,7 +33,6 @@ typedef struct _hekate_config
 	u32 autonogc;
 	u32 updater2p;
 	u32 bootprotect;
-	u32 autokeys; // Ряженка: auto-dump keys via bundled Lockpick on first boot.
 	// Global temporary config.
 	bool t210b01;
 	bool devmode;
