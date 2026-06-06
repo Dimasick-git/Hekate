@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# make-release.sh — крафтит GitHub-релиз Ряженки под текущую версию.
+# make-release.sh — крафтит GitHub-релиз hekate (модуль экосистемы Ряженка) под текущую версию.
 #
 # Версия берётся из Versions.inc (BLVERSION_MAJOR.MINOR.HOTFX). Тег релиза равен
 # этой версии. Если релиза с таким тегом ещё нет — он создаётся. Если уже есть —
@@ -40,9 +40,9 @@ if [ "${#ASSETS[@]}" -eq 0 ]; then
 fi
 log "Ассеты:"; printf '  - %s\n' "${ASSETS[@]}"
 
-TITLE="Ряженка ${VERSION}"
+TITLE="hekate ${VERSION}"
 NOTES=$(cat <<EOF
-Сборка Ряженки **${VERSION}** (форк hekate/Nyx).
+**hekate ${VERSION}** — модуль экосистемы **Ряженка** (форк hekate/Nyx).
 
 Релиз собран автоматически из ветки/коммита \`${TARGET:-$VERSION}\`.
 

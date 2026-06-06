@@ -1,5 +1,5 @@
 /*
- * Ряженка — automatic key dumping at launch (DBI key subset).
+ * hekate (Ряженка ecosystem) — automatic key dumping at launch (DBI key subset).
  *
  * Copyright (c) 2019-2022 shchmue          (Lockpick_RCM key derivation)
  * Copyright (c) 2018      Atmosphère-NX     (key derivation algorithms)

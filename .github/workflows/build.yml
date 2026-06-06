@@ -1,7 +1,7 @@
-name: Build Ряженка (hekate)
+name: Build hekate
 
-# Сборка загрузчика Ряженка (форк hekate/Nyx) через devkitARM.
-# Build of the Ряженка bootloader (hekate/Nyx fork) using devkitARM.
+# Сборка hekate — модуля экосистемы Ряженка (форк hekate/Nyx) через devkitARM.
+# Build of hekate, a module of the Ряженка ecosystem (hekate/Nyx fork).
 
 on:
   push:
@@ -56,7 +56,7 @@ jobs:
           cp output/hekate_libsys_lp0.bso     dist/bootloader/sys/libsys_lp0.bso 2>/dev/null || true
           cp output/hekate_libsys_minerva.bso dist/bootloader/sys/libsys_minerva.bso 2>/dev/null || true
 
-          # Ряженка: Atmosphère TSEC keygen blob for dumpkeys (Erista).
+          # Atmosphère TSEC keygen blob for dumpkeys (Erista).
           cp res/keygen.bin dist/bootloader/sys/keygen.bin 2>/dev/null || true
 
           # Templates and resources shipped with the project.
@@ -71,6 +71,6 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ryazhenka-${{ steps.ver.outputs.version }}
+          name: hekate-${{ steps.ver.outputs.version }}
           path: dist
           if-no-files-found: error

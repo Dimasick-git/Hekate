@@ -1,7 +1,7 @@
-# Ряженка — Ryazhenka
+# hekate — Nyx
 
 > Графический загрузчик и инструментарий для Nintendo Switch.
-> Часть экосистемы **Ряженка**. Форк [hekate — Nyx](https://github.com/CTCaer/hekate) от CTCaer.
+> **Модуль экосистемы Ряженка.** Форк [hekate — Nyx](https://github.com/CTCaer/hekate) от CTCaer.
 
 ![Image of Hekate](https://user-images.githubusercontent.com/3665130/60391760-bc1e8c00-9afe-11e9-8b7a-b065873081b2.png)
 
@@ -9,10 +9,10 @@
 
 ## 🇬🇧 English (quick overview)
 
-**Ряженка** is the bootloader of the *Ryazhenka* ecosystem — a custom graphical
-Nintendo Switch bootloader, firmware patcher and toolbox. It is a downstream fork
-of CTCaer's **hekate — Nyx** and keeps full compatibility with hekate
-configuration files, payloads and modules.
+**hekate** is the bootloader module of the *Ряженка* ecosystem — a custom
+graphical Nintendo Switch bootloader, firmware patcher and toolbox. It is a
+downstream fork of CTCaer's **hekate — Nyx** and keeps full compatibility with
+hekate configuration files, payloads and modules.
 
 ### Features
 
@@ -45,7 +45,7 @@ Every push and pull request is built automatically by GitHub Actions
 (`.github/workflows/build.yml`) inside the official `devkitpro/devkitarm`
 container. The workflow compiles the payload, assembles a ready-to-use SD
 layout under `dist/` and uploads it as a downloadable build artifact named
-`ryazhenka-<version>`.
+`hekate-<version>`.
 
 > **Full documentation (configuration reference, folder layout, Nyx settings) is
 > available in Russian below.**
@@ -54,10 +54,10 @@ layout under `dist/` and uploads it as a downloadable build artifact named
 
 ## 🇷🇺 Русский (полная документация)
 
-**Ряженка** — графический загрузчик, патчер прошивок и набор инструментов для
-Nintendo Switch. Это форк проекта **hekate — Nyx** (автор — CTCaer), входящий в
-экосистему **Ряженка**. Конфигурационные файлы, payload'ы и модули полностью
-совместимы с оригинальным hekate.
+**hekate** — графический загрузчик, патчер прошивок и набор инструментов для
+Nintendo Switch; это модуль экосистемы **Ряженка**. Форк проекта **hekate — Nyx**
+(автор — CTCaer). Конфигурационные файлы, payload'ы и модули полностью совместимы
+с оригинальным hekate.
 
 ### Содержание
 
@@ -128,10 +128,11 @@ make -j"$(nproc)"
 1. Выгружается окружение devkitPro (`DEVKITARM`, `DEVKITPRO`).
 2. Считывается версия из `Versions.inc`.
 3. Выполняется `make -j`.
-4. Собирается готовая раскладка SD-карты в каталоге `dist/` (переименованный
-   payload `ryazhenka_<версия>.bin` и папка `bootloader/`).
-5. Результат загружается как артефакт сборки `ryazhenka-<версия>`, который
-   можно скачать со страницы запуска workflow.
+4. Собирается готовая раскладка SD-карты в каталоге `dist/` (payload
+   `payload.bin` и папка `bootloader/`).
+5. Результат загружается как артефакт сборки `hekate-<версия>`, который
+   можно скачать со страницы запуска workflow. Релиз публикуется с тем же
+   `payload.bin` и архивом `hekate_<версия>.zip`.
 
 ### Папки и файлы загрузчика
 
@@ -323,9 +324,9 @@ Bootlogo может быть любого размера, но не больше
 
 ### Благодарности и лицензия
 
-Проект **Ряженка** основан на **hekate — Nyx** и распространяется на тех же
-условиях. Полный текст лицензии — в файле [`LICENSE`](./LICENSE). Все права
-оригинальных авторов сохранены.
+Этот модуль **hekate** (экосистема **Ряженка**) основан на **hekate — Nyx** и
+распространяется на тех же условиях. Полный текст лицензии — в файле
+[`LICENSE`](./LICENSE). Все права оригинальных авторов сохранены.
 
 ```
 hekate  (c) 2018,      naehrwert, st4rk.

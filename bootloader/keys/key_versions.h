@@ -1,5 +1,5 @@
 /*
- * Ряженка — key generation version table.
+ * hekate (Ряженка ecosystem) — key generation version table.
  * Vendored from Lockpick_RCM (hos.h). Keep KB_FIRMWARE_VERSION_MAX in sync
  * with the source-constant tables in key_sources.inl / dump_keys.c.
  */

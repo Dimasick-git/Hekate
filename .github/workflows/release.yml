@@ -1,6 +1,6 @@
-name: Release Ряженка
+name: Release hekate
 
-# Крафтит релиз под текущую версию из Versions.inc.
+# Крафтит релиз hekate (модуль экосистемы Ряженка) под текущую версию из Versions.inc.
 # Тег = номер версии (например, 6.5.2). Если релиз с таким тегом уже есть —
 # файлы в нём просто перезаписываются.
 
@@ -78,7 +78,7 @@ jobs:
           cp output/hekate_libsys_lp0.bso     pkg/bootloader/sys/libsys_lp0.bso 2>/dev/null || true
           cp output/hekate_libsys_minerva.bso pkg/bootloader/sys/libsys_minerva.bso 2>/dev/null || true
 
-          # Ряженка: Atmosphère TSEC keygen blob for dumpkeys (Erista).
+          # Atmosphère TSEC keygen blob for dumpkeys (Erista).
           cp res/keygen.bin pkg/bootloader/sys/keygen.bin 2>/dev/null || true
 
           # Templates.
@@ -87,7 +87,7 @@ jobs:
 
           mkdir -p dist
           cp pkg/payload.bin dist/payload.bin
-          ( cd pkg && zip -qr "../dist/ryazhenka_${VER}.zip" . )
+          ( cd pkg && zip -qr "../dist/hekate_${VER}.zip" . )
           echo "----- dist/ -----"; ls -la dist
 
       - name: Create or update release
