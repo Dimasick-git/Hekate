@@ -42,31 +42,12 @@ jobs:
 
       - name: Package SD layout
         run: |
-          VER="${{ steps.ver.outputs.version }}"
-          mkdir -p dist/bootloader/sys
-          mkdir -p dist/bootloader/ini
-          mkdir -p dist/bootloader/payloads
-          mkdir -p dist/bootloader/res
-
-          # Payload at the SD root (named payload.bin for autoboot/RCM loaders).
-          cp output/hekate.bin "dist/payload.bin"
-
-          # Core system modules produced by the build.
-          cp output/nyx.bin                   dist/bootloader/sys/ 2>/dev/null || true
-          cp output/hekate_libsys_lp0.bso     dist/bootloader/sys/libsys_lp0.bso 2>/dev/null || true
-          cp output/hekate_libsys_minerva.bso dist/bootloader/sys/libsys_minerva.bso 2>/dev/null || true
-
-          # Atmosphère TSEC keygen blob for dumpkeys (Erista).
-          cp res/keygen.bin dist/bootloader/sys/keygen.bin 2>/dev/null || true
-
-          # Templates and resources shipped with the project.
-          cp res/hekate_ipl_template.ini dist/bootloader/ 2>/dev/null || true
-          cp res/patches_template.ini    dist/bootloader/ 2>/dev/null || true
-
+          chmod +x scripts/package-sd.sh
+          scripts/package-sd.sh dist
           echo "----- output/ -----"
           ls -la output || true
           echo "----- dist/ -----"
-          find dist -type f
+          find dist -type f | sort
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

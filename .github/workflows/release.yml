@@ -68,26 +68,12 @@ jobs:
       - name: Assemble release package
         run: |
           VER="${{ needs.build.outputs.version }}"
-          mkdir -p pkg/bootloader/sys pkg/bootloader/ini pkg/bootloader/payloads pkg/bootloader/res
-
-          # Payload (named payload.bin for autoboot/RCM loaders).
-          cp output/hekate.bin "pkg/payload.bin"
-
-          # Core system modules.
-          cp output/nyx.bin                   pkg/bootloader/sys/ 2>/dev/null || true
-          cp output/hekate_libsys_lp0.bso     pkg/bootloader/sys/libsys_lp0.bso 2>/dev/null || true
-          cp output/hekate_libsys_minerva.bso pkg/bootloader/sys/libsys_minerva.bso 2>/dev/null || true
-
-          # Atmosphère TSEC keygen blob for dumpkeys (Erista).
-          cp res/keygen.bin pkg/bootloader/sys/keygen.bin 2>/dev/null || true
-
-          # Templates.
-          cp res/hekate_ipl_template.ini pkg/bootloader/ 2>/dev/null || true
-          cp res/patches_template.ini    pkg/bootloader/ 2>/dev/null || true
-
+          chmod +x scripts/package-sd.sh
+          scripts/package-sd.sh pkg
           mkdir -p dist
           cp pkg/payload.bin dist/payload.bin
           ( cd pkg && zip -qr "../dist/hekate_${VER}.zip" . )
+          echo "----- pkg/ -----"; find pkg -type f | sort
           echo "----- dist/ -----"; ls -la dist
 
       - name: Create or update release

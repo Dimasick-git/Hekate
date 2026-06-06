@@ -143,10 +143,11 @@ static void fs_derive_key_area_key(key_storage_t *keys, void *out_key, u32 sourc
 // root key slots. The firmware blob is loaded from the SD card (not embedded,
 // to keep the IPL uncompressed size within limits). Missing file -> skip.
 static int run_ams_keygen(void) {
+    // The Atmosphère TSEC keygen firmware is hekate's thk.bin (identical blob).
     u32 fw_size = 0;
-    void *fw = sd_file_read("bootloader/sys/keygen.bin", &fw_size);
+    void *fw = sd_file_read("bootloader/sys/thk.bin", &fw_size);
     if (!fw || !fw_size) {
-        EPRINTF("dumpkeys: bootloader/sys/keygen.bin missing.");
+        EPRINTF("dumpkeys: bootloader/sys/thk.bin missing.");
         return -1;
     }
 
