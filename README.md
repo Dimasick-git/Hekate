@@ -134,12 +134,14 @@ make -j"$(nproc)"
    можно скачать со страницы запуска workflow. Релиз публикуется с тем же
    `payload.bin` и архивом `hekate_<версия>.zip`.
 
-Пакет — **полная готовая SD-раскладка**: `payload.bin`, `bootloader/update.bin`,
-собранные `bootloader/sys/{nyx.bin, libsys_lp0.bso, libsys_minerva.bso}`, а также
-prebuilt-файлы (`res.pak`, `emummc.kipm`, `thk.bin`, `lockpick.bin`, `l4t/*`, иконки Nyx),
-завендоренные в `res/sd/` из официального релиза CTCaer. Эти бинарники **не
-собираются из исходников** (CTCaer поставляет их готовыми) — они приложены
-как есть и распространяются на условиях GPLv2.
+Пакет — **полная готовая SD-раскладка** под экосистему Ряженка (содержимое
+`res/sd/`): `payload.bin`, `bootloader/update.bin`, собранные
+`bootloader/sys/{nyx.bin, libsys_lp0.bso, libsys_minerva.bso}`, готовая
+конфигурация (`hekate_ipl.ini`, `nyx.ini`, `ini/more_configs.ini`), ресурсы
+(`res/*.bmp`), payload'ы (`Lockpick_RCM.bin`, `TegraExplorer.bin`), патченный
+`sys/lockpick.bin` (autokeys) и prebuilt-блобы (`res.pak`, `emummc.kipm`,
+`thk.bin`, `l4t/*`). Prebuilt-бинарники **не собираются из исходников** (взяты из
+официального релиза CTCaer) и распространяются на условиях GPLv2.
 
 ### Папки и файлы загрузчика
 

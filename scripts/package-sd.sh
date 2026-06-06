@@ -3,14 +3,13 @@
 # package-sd.sh — собирает полную SD-раскладку hekate (модуль экосистемы Ряженка).
 #
 # Складывает в <dest>:
-#   payload.bin                         — собранный payload (для autoboot/RCM)
-#   bootloader/update.bin               — тот же payload (автообновление модчипа)
-#   bootloader/sys/nyx.bin              — собранный Nyx GUI
-#   bootloader/sys/libsys_lp0.bso       — собранный модуль LP0
-#   bootloader/sys/libsys_minerva.bso   — собранный модуль Minerva
-#   bootloader/sys/{emummc.kipm,res.pak,thk.bin,l4t/*} — prebuilt (res/sd)
-#   bootloader/res/{icon_switch,icon_payload}.bmp      — иконки Nyx (res/sd)
-#   bootloader/{hekate_ipl_template,patches_template}.ini — шаблоны
+#   payload.bin / bootloader/update.bin — собранный payload (autoboot/RCM, автообновление)
+#   bootloader/sys/{nyx.bin,libsys_lp0.bso,libsys_minerva.bso} — собранные бинарники
+#   bootloader/sys/lockpick.bin         — патченный Lockpick (autokeys); CI кладёт 1.9.20,
+#                                         иначе берётся fallback из res/sd
+#   bootloader/sys/{emummc.kipm,res.pak,thk.bin,l4t/*} — prebuilt из res/sd
+#   bootloader/{hekate_ipl.ini,nyx.ini}, bootloader/ini/*, bootloader/res/*,
+#   bootloader/payloads/*               — готовая конфигурация и ресурсы из res/sd
 #
 # Использование: scripts/package-sd.sh <dest-dir>
 #
@@ -37,14 +36,7 @@ cp "$ROOT/output/nyx.bin"            "$DEST/bootloader/sys/nyx.bin"
 cp "$ROOT/output/libsys_lp0.bso"     "$DEST/bootloader/sys/libsys_lp0.bso"
 cp "$ROOT/output/libsys_minerva.bso" "$DEST/bootloader/sys/libsys_minerva.bso"
 
-# 3. Config templates.
-cp "$ROOT/res/hekate_ipl_template.ini" "$DEST/bootloader/"
-cp "$ROOT/res/patches_template.ini"    "$DEST/bootloader/"
-
-# 4. Empty user folders (kept for layout clarity).
-mkdir -p "$DEST/bootloader/ini" "$DEST/bootloader/payloads"
-
-# 5. Payload at the SD root + update.bin for modchip auto-update.
+# 3. Payload at the SD root + update.bin for modchip auto-update.
 cp "$ROOT/output/hekate.bin" "$DEST/payload.bin"
 cp "$ROOT/output/hekate.bin" "$DEST/bootloader/update.bin"
 
