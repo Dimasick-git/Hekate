@@ -8,10 +8,8 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
       - main
-    paths:
-      - Versions.inc
+      - master
 
 permissions:
   contents: write
@@ -72,8 +70,8 @@ jobs:
           VER="${{ needs.build.outputs.version }}"
           mkdir -p pkg/bootloader/sys pkg/bootloader/ini pkg/bootloader/payloads pkg/bootloader/res
 
-          # Renamed payload (also shipped standalone).
-          cp output/hekate.bin "pkg/ryazhenka_${VER}.bin"
+          # Payload (named payload.bin for autoboot/RCM loaders).
+          cp output/hekate.bin "pkg/payload.bin"
 
           # Core system modules.
           cp output/nyx.bin                   pkg/bootloader/sys/ 2>/dev/null || true
@@ -88,7 +86,7 @@ jobs:
           cp res/patches_template.ini    pkg/bootloader/ 2>/dev/null || true
 
           mkdir -p dist
-          cp "pkg/ryazhenka_${VER}.bin" "dist/ryazhenka_${VER}.bin"
+          cp pkg/payload.bin dist/payload.bin
           ( cd pkg && zip -qr "../dist/ryazhenka_${VER}.zip" . )
           echo "----- dist/ -----"; ls -la dist
 

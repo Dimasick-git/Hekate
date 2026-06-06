@@ -48,8 +48,8 @@ jobs:
           mkdir -p dist/bootloader/payloads
           mkdir -p dist/bootloader/res
 
-          # Renamed payload at the SD root.
-          cp output/hekate.bin "dist/ryazhenka_${VER}.bin"
+          # Payload at the SD root (named payload.bin for autoboot/RCM loaders).
+          cp output/hekate.bin "dist/payload.bin"
 
           # Core system modules produced by the build.
           cp output/nyx.bin                   dist/bootloader/sys/ 2>/dev/null || true
