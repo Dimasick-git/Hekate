@@ -27,9 +27,9 @@ cp -r "$ROOT/res/sd/bootloader/." "$DEST/bootloader/"
 
 # 2. Overlay the freshly built binaries.
 mkdir -p "$DEST/bootloader/sys"
-cp "$ROOT/output/nyx.bin"                   "$DEST/bootloader/sys/nyx.bin"
-cp "$ROOT/output/hekate_libsys_lp0.bso"     "$DEST/bootloader/sys/libsys_lp0.bso"
-cp "$ROOT/output/hekate_libsys_minerva.bso" "$DEST/bootloader/sys/libsys_minerva.bso"
+cp "$ROOT/output/nyx.bin"            "$DEST/bootloader/sys/nyx.bin"
+cp "$ROOT/output/libsys_lp0.bso"     "$DEST/bootloader/sys/libsys_lp0.bso"
+cp "$ROOT/output/libsys_minerva.bso" "$DEST/bootloader/sys/libsys_minerva.bso"
 
 # 3. Config templates.
 cp "$ROOT/res/hekate_ipl_template.ini" "$DEST/bootloader/"
