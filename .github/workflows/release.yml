@@ -80,6 +80,9 @@ jobs:
           cp output/hekate_libsys_lp0.bso     pkg/bootloader/sys/libsys_lp0.bso 2>/dev/null || true
           cp output/hekate_libsys_minerva.bso pkg/bootloader/sys/libsys_minerva.bso 2>/dev/null || true
 
+          # Ряженка: Atmosphère TSEC keygen blob for dumpkeys (Erista).
+          cp res/keygen.bin pkg/bootloader/sys/keygen.bin 2>/dev/null || true
+
           # Templates.
           cp res/hekate_ipl_template.ini pkg/bootloader/ 2>/dev/null || true
           cp res/patches_template.ini    pkg/bootloader/ 2>/dev/null || true

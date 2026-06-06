@@ -12,7 +12,6 @@
 
 #include "dump_keys.h"
 #include "key_versions.h"
-#include "tsec_keygen.h"
 
 #include <bdk.h>
 
@@ -140,19 +139,31 @@ static void fs_derive_key_area_key(key_storage_t *keys, void *out_key, u32 sourc
 // Master key derivation.
 // ---------------------------------------------------------------------------
 
+// Erista-only: run the Atmosphère TSEC keygen firmware to populate the TSEC
+// root key slots. The firmware blob is loaded from the SD card (not embedded,
+// to keep the IPL uncompressed size within limits). Missing file -> skip.
 static int run_ams_keygen(void) {
+    u32 fw_size = 0;
+    void *fw = sd_file_read("bootloader/sys/keygen.bin", &fw_size);
+    if (!fw || !fw_size) {
+        EPRINTF("dumpkeys: bootloader/sys/keygen.bin missing.");
+        return -1;
+    }
+
     tsec_ctxt_t tsec_ctxt = {0};
-    tsec_ctxt.fw = (void *)tsec_keygen;
-    tsec_ctxt.size = sizeof(tsec_keygen);
+    tsec_ctxt.fw = fw;
+    tsec_ctxt.size = fw_size;
     tsec_ctxt.type = TSEC_FW_TYPE_NEW;
 
     u32 retries = 0;
+    int res = 0;
     u8 temp_key[SE_KEY_128_SIZE] __attribute__((aligned(4)));
-    while (tsec_query(temp_key, &tsec_ctxt) < 0) {
+    while ((res = tsec_query(temp_key, &tsec_ctxt)) < 0) {
         if (++retries > 15)
-            return -1;
+            break;
     }
-    return 0;
+    free(fw);
+    return res < 0 ? -1 : 0;
 }
 
 static void _derive_master_keys_mariko(key_storage_t *keys) {
