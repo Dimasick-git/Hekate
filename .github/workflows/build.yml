@@ -19,7 +19,7 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Export devkitPro environment
         run: |
@@ -39,7 +39,7 @@ jobs:
         run: make -j"$(nproc)"
 
       - name: Upload hekate output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hekate-output
           path: output
@@ -49,7 +49,7 @@ jobs:
     name: Build patched Lockpick (autokeys)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Fetch Lockpick 1.9.20 source and apply autokeys patch
         run: |
@@ -69,7 +69,7 @@ jobs:
           ls -la out
 
       - name: Upload lockpick
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lockpick-build
           path: out/lockpick.bin
@@ -80,16 +80,16 @@ jobs:
     needs: [hekate, lockpick]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download hekate output
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: hekate-output
           path: output
 
       - name: Download patched Lockpick
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: lockpick-build
           path: output
@@ -101,7 +101,7 @@ jobs:
           echo "----- dist/ -----"; find dist -type f | sort
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hekate-${{ needs.hekate.outputs.version }}
           path: dist

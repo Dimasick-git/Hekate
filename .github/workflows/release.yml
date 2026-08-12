@@ -23,7 +23,7 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Export devkitPro environment
         run: |
@@ -44,7 +44,7 @@ jobs:
         run: make -j"$(nproc)"
 
       - name: Upload build output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-output
           path: output
@@ -54,7 +54,7 @@ jobs:
     name: Build patched Lockpick (autokeys)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Fetch Lockpick 1.9.20 source and apply autokeys patch
         run: |
@@ -72,7 +72,7 @@ jobs:
           mkdir -p out && cp lp/output/Lockpick_RCM.bin out/lockpick.bin
 
       - name: Upload lockpick
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lockpick-build
           path: out/lockpick.bin
@@ -85,16 +85,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download build output
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-output
           path: output
 
       - name: Download patched Lockpick
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: lockpick-build
           path: output
