@@ -165,7 +165,7 @@ make -j"$(nproc)"
 |  \|__ nyx.bin              | Nyx — графический интерфейс.                                          |
 |  \|__ res.pak              | Пакет ресурсов Nyx.                                                   |
 |  \|__ thk.bin              | Atmosphère Tsec Hovi Keygen.                                          |
-|  \|__ lockpick.bin         | **Ряженка:** патченный Lockpick_RCM 1.9.20 (авто-режим) для autokeys. Собирается в CI из THZoria/Lockpick_RCMaster@1.9.20 + `res/lockpick-autokeys.patch`. |
+|  \|__ lockpick.bin         | **Ряженка:** патченный Lockpick_RCM 2.0.0 для autokeys. Собирается в CI из THZoria/Lockpick_RCMaster@2.0.0 + `res/lockpick-autokeys.patch`; автоснятие ключей, автонажатие и перезагрузка обратно в Hekate сохранены. |
 |  \|__ /l4t/                | Папка с прошивками для L4T (Linux/Android).                           |
 | bootloader/screenshots/   | Папка, куда Nyx сохраняет скриншоты.                                  |
 | bootloader/payloads/      | Для меню `Payloads`. Поддерживаются любые загрузчики CFW, инструменты, payload'ы Linux. Автозагрузка — только через ini. |

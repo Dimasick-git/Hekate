@@ -5,8 +5,8 @@
 # Складывает в <dest>:
 #   payload.bin / bootloader/update.bin — собранный payload (autoboot/RCM, автообновление)
 #   bootloader/sys/{nyx.bin,libsys_lp0.bso,libsys_minerva.bso} — собранные бинарники
-#   bootloader/sys/lockpick.bin         — патченный Lockpick (autokeys); CI кладёт 1.9.20,
-#                                         иначе берётся fallback из res/sd
+#   bootloader/sys/lockpick.bin         — патченный Lockpick 2.0.0 (autokeys); CI кладёт
+#                                         свежую проверенную сборку, иначе берётся fallback из res/sd
 #   bootloader/sys/{emummc.kipm,res.pak,thk.bin,l4t/*} — prebuilt из res/sd
 #   bootloader/{hekate_ipl.ini,nyx.ini}, bootloader/ini/*, bootloader/res/*,
 #   bootloader/payloads/*               — готовая конфигурация и ресурсы из res/sd

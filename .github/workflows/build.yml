@@ -51,9 +51,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Fetch Lockpick 1.9.20 source and apply autokeys patch
+      - name: Fetch Lockpick 2.0.0 source and apply autokeys patch
         run: |
-          curl -sSL "https://github.com/THZoria/Lockpick_RCMaster/archive/refs/tags/1.9.20.tar.gz" -o lp.tgz
+          curl -sSL "https://github.com/THZoria/Lockpick_RCMaster/archive/refs/tags/2.0.0.tar.gz" -o lp.tgz
           mkdir lp && tar -xf lp.tgz -C lp --strip-components=1
           patch -p1 -d lp < res/lockpick-autokeys.patch
 
