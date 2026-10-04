@@ -233,6 +233,25 @@ int parse_pkg3(launch_ctxt_t *ctxt, const char *path)
 				break;
 
 			case CNT_TYPE_EXO:
+				// An explicit secmon= placed before pkg3 in the entry wins.
+				if (ctxt->secmon)
+					break;
+
+				// Ряженка: like fusee, prefer sd:/atmosphere/exosphere.bin when present.
+				// Not for stock boots. Disable with [config] autosecmon=0.
+				if (h_cfg.autosecmon && !stock)
+				{
+					u32 exo_size = 0;
+					void *exo = sd_file_read("atmosphere/exosphere.bin", &exo_size);
+					if (exo)
+					{
+						ctxt->secmon_size = exo_size;
+						ctxt->secmon = exo;
+						gfx_printf("Loaded atmosphere/exosphere.bin\n");
+						break;
+					}
+				}
+
 				ctxt->secmon_size = curr_pkg3_cnt[i].size;
 				ctxt->secmon = content;
 				break;

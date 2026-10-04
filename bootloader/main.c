@@ -739,6 +739,7 @@ static bool _autokeys_enabled()
 					enabled = atoi(kv->val);
 			break;
 		}
+		ini_free(&ini_sections);
 	}
 
 	return enabled;
@@ -751,8 +752,17 @@ static bool _autokeys_enabled()
 // reboots back to hekate; the next boot finds the keys and skips this.
 static void _autokeys_run()
 {
-	// Keys already present -> nothing to do.
+	// Keys already present -> nothing to do. Clear a leftover attempt marker.
 	if (!f_stat("switch/prod.keys", NULL))
+	{
+		f_unlink("bootloader/sys/autokeys.attempt");
+		return;
+	}
+
+	// A previous attempt did not produce keys (Lockpick failed or was interrupted).
+	// Do not chainload it again on every boot: that would be a reboot loop.
+	// Delete bootloader/sys/autokeys.attempt to retry.
+	if (!f_stat("bootloader/sys/autokeys.attempt", NULL))
 		return;
 
 	// Bundled Lockpick build is required.
@@ -763,8 +773,10 @@ static void _autokeys_run()
 	if (!_autokeys_enabled())
 		return;
 
-	// Signal the bundled Lockpick to auto-dump and reboot back.
+	// Remember the attempt, then signal the bundled Lockpick to auto-dump and reboot back.
 	FIL fp;
+	if (f_open(&fp, "bootloader/sys/autokeys.attempt", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
+		f_close(&fp);
 	if (f_open(&fp, "bootloader/sys/autokeys.request", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
 		f_close(&fp);
 
@@ -842,6 +854,10 @@ static void _auto_launch()
 						h_cfg.updater2p   = atoi(kv->val);
 					else if (!strcmp("bootprotect",   kv->key))
 						h_cfg.bootprotect = atoi(kv->val);
+					else if (!strcmp("autokeys",      kv->key))
+						h_cfg.autokeys    = atoi(kv->val);
+					else if (!strcmp("autosecmon",    kv->key))
+						h_cfg.autosecmon  = atoi(kv->val);
 				}
 				boot_entry_id++;
 

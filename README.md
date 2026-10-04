@@ -25,7 +25,8 @@ hekate configuration files, payloads and modules.
 - **emuMMC creation & manager** — create, migrate and repair emuMMC.
 - **USB Mass Storage (UMS)** — turns the Switch into an SD/eMMC card reader.
 - **USB gamepad**, hardware info, benchmarks, AutoRCM and many more tools.
-- **Automatic key dumping on first boot** (`autokeys`) — if no `prod.keys` exist yet, hekate chainloads the bundled Lockpick build, which dumps `sd:/switch/prod.keys` and reboots back. Enabled by default; set `autokeys=0` to disable.
+- **Automatic key dumping on first boot** (`autokeys`) — if no `prod.keys` exist yet, hekate chainloads the bundled Lockpick build, which dumps `sd:/switch/prod.keys` and reboots back. Enabled by default; set `autokeys=0` to disable. If an attempt does not produce keys, it is not repeated (no reboot loop) — delete `bootloader/sys/autokeys.attempt` to retry.
+- **Exosphère from the SD card** (`autosecmon`) — like fusee, `pkg3` boots use `sd:/atmosphere/exosphere.bin` when it exists (not for `stock=1`). Enabled by default; set `autosecmon=0` to disable.
 
 ### Build
 
@@ -199,7 +200,8 @@ make -j"$(nproc)"
 | ------------------ | --- *Параметры ниже редактируются только через ini* --- |
 | noticker=0         | 0: во время кастомного bootlogo рисуется анимированная линия, показывающая оставшееся время для входа в меню. 1: выключить. |
 | bootprotect=0      | 0: выключено, 1: защитить папку bootloader от повреждения, запретив её чтение/редактирование в HOS. |
-| autokeys=1         | **Ряженка:** 1: если на SD нет `switch/prod.keys`, при первой загрузке автоматически чейнлоадится встроенный Lockpick (`bootloader/sys/lockpick.bin`), **молча** снимает ключи (без нажатий кнопок) и перезагружается обратно. 0: выключить. |
+| autokeys=1         | **Ряженка:** 1: если на SD нет `switch/prod.keys`, при первой загрузке автоматически чейнлоадится встроенный Lockpick (`bootloader/sys/lockpick.bin`), **молча** снимает ключи (без нажатий кнопок) и перезагружается обратно. Если попытка не дала ключей, она не повторяется (без цикла перезагрузок) — для повтора удалите `bootloader/sys/autokeys.attempt`. 0: выключить. |
+| autosecmon=1       | **Ряженка:** 1: записи с `pkg3`/`fss0` берут security monitor из `atmosphere/exosphere.bin`, если файл есть на SD, — как это делает fusee (строка `secmon=` в записи не нужна). Записи со `stock=1` не затрагиваются; явный `secmon=` в записи главнее. Exosphere должен быть той же версии Atmosphère, что и `package3`. 0: выключить. |
 
 #### Параметры загрузочной записи
 
@@ -247,7 +249,7 @@ make -j"$(nproc)"
 указать обычный `kip1` после неё, чтобы подгрузить отдельные kip'ы.
 
 **Примечание 2**: при использовании PKG3/FSS0 разбираются exosphere, warmboot и
-все core-кипы. Первые два можно переопределить ключами `secmon`/`warmboot` после
+все core-кипы (при `autosecmon=1` exosphere берётся из `atmosphere/exosphere.bin`, если он есть). Первые два можно переопределить ключами `secmon`/`warmboot` после
 `pkg3`/`fss0`. Ключом `kip1` можно подгрузить дополнительный kip или несколько
 через маску (`/*`).
 

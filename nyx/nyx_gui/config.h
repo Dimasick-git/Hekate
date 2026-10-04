@@ -33,6 +33,8 @@ typedef struct _hekate_config
 	u32 autonogc;
 	u32 updater2p;
 	u32 bootprotect;
+	u32 autokeys;   // Ряженка: снять ключи бандлом Lockpick, если нет switch/prod.keys.
+	u32 autosecmon; // Ряженка: pkg3 берёт atmosphere/exosphere.bin с SD, как fusee.
 	// Global temporary config.
 	bool t210b01;
 	bool devmode;

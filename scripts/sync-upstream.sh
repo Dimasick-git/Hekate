@@ -72,6 +72,15 @@ log "Слияние upstream/$UPSTREAM_BRANCH в $SYNC_BRANCH…"
 if git merge --no-edit --no-ff \
      -m "sync: подтянуть upstream CTCaer/hekate @ ${UPSTREAM_HEAD:0:10}" \
      "upstream/$UPSTREAM_BRANCH"; then
+  # Апстрим мог быть уже влит squash-слиянием: коммиты не предки, но содержимое
+  # то же. Тогда слияние ничего не меняет — PR открывать незачем.
+  if git diff --quiet "$BASE_REF" HEAD; then
+    log "Содержимое апстрима уже в базе (прошлый PR влит squash'ем) — делать нечего."
+    emit has_changes "false"
+    emit conflicts "false"
+    emit upstream_head "$UPSTREAM_HEAD"
+    exit 3
+  fi
   log "Слияние прошло чисто (наши файлы сохранены)."
   emit has_changes "true"
   emit conflicts "false"

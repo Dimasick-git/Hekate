@@ -203,6 +203,10 @@ static void _load_saved_configuration()
 					h_cfg.updater2p   = atoi(kv->val);
 				else if (!strcmp("bootprotect", kv->key))
 					h_cfg.bootprotect = atoi(kv->val);
+				else if (!strcmp("autokeys",    kv->key))
+					h_cfg.autokeys    = atoi(kv->val);
+				else if (!strcmp("autosecmon",  kv->key))
+					h_cfg.autosecmon  = atoi(kv->val);
 			}
 
 			break;

@@ -5,6 +5,8 @@ name: Sync upstream (CTCaer/hekate)
 #
 # По умолчанию изменения апстрима оформляются как Pull Request — так наши файлы
 # (README, CI, скрипты) гарантированно не ломаются, а слияние проходит ревью.
+# PR синхронизации лучше вливать обычным merge-коммитом, а не squash: тогда
+# коммиты апстрима становятся предками main и скрипт сразу видит «всё влито».
 # Режим "push" вливает изменения сразу в текущую ветку (без PR).
 
 on:
@@ -78,7 +80,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git push -u origin "${SYNC_BRANCH}"
+          # Ветка синхронизации каждый раз пересобирается от базы заново, поэтому
+          # её прошлая версия на GitHub (особенно после squash-слияния PR) не
+          # является предком новой — без --force пуш отклоняется (non-fast-forward).
+          git push --force -u origin "${SYNC_BRANCH}"
           UP="${{ steps.sync.outputs.upstream_head }}"
           TITLE="sync: подтянуть upstream CTCaer/hekate @ ${UP:0:10}"
           BODY=$(cat <<EOF

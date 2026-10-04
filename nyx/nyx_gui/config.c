@@ -36,6 +36,8 @@ void set_default_configuration()
 	h_cfg.autonogc      = 1;
 	h_cfg.updater2p     = 0;
 	h_cfg.bootprotect   = 0;
+	h_cfg.autokeys      = 1;
+	h_cfg.autosecmon    = 1;
 
 	h_cfg.errors = 0;
 	h_cfg.eks = NULL;
@@ -133,6 +135,15 @@ int create_config_entry()
 
 	f_puts("\nbootprotect=", &fp);
 	itoa(h_cfg.bootprotect, lbuf, 10);
+	f_puts(lbuf, &fp);
+
+	// Ряженка: keep our [config] keys when Nyx rewrites the section.
+	f_puts("\nautokeys=", &fp);
+	itoa(h_cfg.autokeys, lbuf, 10);
+	f_puts(lbuf, &fp);
+
+	f_puts("\nautosecmon=", &fp);
+	itoa(h_cfg.autosecmon, lbuf, 10);
 	f_puts(lbuf, &fp);
 
 	f_puts("\n", &fp);
