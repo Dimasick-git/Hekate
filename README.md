@@ -25,7 +25,7 @@ hekate configuration files, payloads and modules.
 - **emuMMC creation & manager** — create, migrate and repair emuMMC.
 - **USB Mass Storage (UMS)** — turns the Switch into an SD/eMMC card reader.
 - **USB gamepad**, hardware info, benchmarks, AutoRCM and many more tools.
-- **Automatic key dumping on first boot** (`autokeys`) — if no `prod.keys` exist yet, hekate chainloads the bundled Lockpick build, which dumps `sd:/switch/prod.keys` and reboots back. Enabled by default; set `autokeys=0` to disable. If an attempt does not produce keys, it is not repeated (no reboot loop) — delete `bootloader/sys/autokeys.attempt` to retry.
+- **Automatic key dumping and refresh** (`autokeys`) — bundled Lockpick 2.0.1 dumps keys without button prompts and returns to hekate. Existing keys refresh once per bundled revision; a completion marker prevents repeated dumps. Set `autokeys=0` to disable. Failed or interrupted attempts do not repeat automatically; remove `bootloader/sys/autokeys.attempt` to retry.
 - **Exosphère from the SD card** (`autosecmon`) — like fusee, `pkg3` boots use `sd:/atmosphere/exosphere.bin` when it exists (not for `stock=1`). Enabled by default; set `autosecmon=0` to disable.
 
 ### Build
@@ -39,6 +39,22 @@ make -j"$(nproc)"
 ```
 
 The resulting payload is produced at `output/hekate.bin`.
+
+For a full SD package, also build the pinned Lockpick source with this fork's
+patch (devkitARM and a native GCC are required):
+
+```bash
+git clone https://github.com/THZoria/Lockpick_RCMaster.git lp
+git -C lp checkout 97c27558d2e80c4b0a1914750c758242f16123d9
+patch --fuzz=0 -p1 -d lp < res/lockpick-autokeys.patch
+make -C lp -j"$(nproc)"
+cp lp/output/Lockpick_RCM.bin output/lockpick.bin
+bash scripts/package-sd.sh dist
+```
+
+The patch uses size optimization and fails the build if the payload exceeds
+its memory limits. A completion marker is written only after saving the
+console's key set; SD write errors leave the attempt blocked until a manual retry.
 
 ### Continuous Integration
 
@@ -166,7 +182,7 @@ make -j"$(nproc)"
 |  \|__ nyx.bin              | Nyx — графический интерфейс.                                          |
 |  \|__ res.pak              | Пакет ресурсов Nyx.                                                   |
 |  \|__ thk.bin              | Atmosphère Tsec Hovi Keygen.                                          |
-|  \|__ lockpick.bin         | **Ряженка:** патченный Lockpick_RCM 2.0.0 для autokeys. Собирается в CI из THZoria/Lockpick_RCMaster@2.0.0 + `res/lockpick-autokeys.patch`; автоснятие ключей, автонажатие и перезагрузка обратно в Hekate сохранены. |
+|  \|__ lockpick.bin         | **Ряженка:** Lockpick_RCM 2.0.1 из THZoria/Lockpick_RCMaster, коммит `97c27558d2e80c4b0a1914750c758242f16123d9` + `res/lockpick-autokeys.patch`. Автоснятие без нажатий и возврат в Hekate сохранены. Ручной payload `bootloader/payloads/Lockpick_RCM.bin` содержит ту же сборку. |
 |  \|__ /l4t/                | Папка с прошивками для L4T (Linux/Android).                           |
 | bootloader/screenshots/   | Папка, куда Nyx сохраняет скриншоты.                                  |
 | bootloader/payloads/      | Для меню `Payloads`. Поддерживаются любые загрузчики CFW, инструменты, payload'ы Linux. Автозагрузка — только через ini. |
@@ -200,7 +216,7 @@ make -j"$(nproc)"
 | ------------------ | --- *Параметры ниже редактируются только через ini* --- |
 | noticker=0         | 0: во время кастомного bootlogo рисуется анимированная линия, показывающая оставшееся время для входа в меню. 1: выключить. |
 | bootprotect=0      | 0: выключено, 1: защитить папку bootloader от повреждения, запретив её чтение/редактирование в HOS. |
-| autokeys=1         | **Ряженка:** 1: если на SD нет `switch/prod.keys`, при первой загрузке автоматически чейнлоадится встроенный Lockpick (`bootloader/sys/lockpick.bin`), **молча** снимает ключи (без нажатий кнопок) и перезагружается обратно. Если попытка не дала ключей, она не повторяется (без цикла перезагрузок) — для повтора удалите `bootloader/sys/autokeys.attempt`. 0: выключить. |
+| autokeys=1         | **Ряженка:** автоснятие встроенным Lockpick без нажатий и возврат в Hekate. Старые ключи обновляются один раз при смене встроенной версии; успешная запись отмечается в `bootloader/sys/autokeys.version`. После сбоя повторный автоматический запуск блокируется — удалите `bootloader/sys/autokeys.attempt` для повторной попытки. 0: выключить. |
 | autosecmon=1       | **Ряженка:** 1: записи с `pkg3`/`fss0` берут security monitor из `atmosphere/exosphere.bin`, если файл есть на SD, — как это делает fusee (строка `secmon=` в записи не нужна). Записи со `stock=1` не затрагиваются; явный `secmon=` в записи главнее. Exosphere должен быть той же версии Atmosphère, что и `package3`. 0: выключить. |
 
 #### Параметры загрузочной записи

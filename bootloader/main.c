@@ -745,48 +745,63 @@ static bool _autokeys_enabled()
 	return enabled;
 }
 
-// Ряженка: on first boot, if no prod.keys exist yet, chainload the bundled
-// Lockpick build to dump them. Runs early (before the self-update check and
-// autoboot) so it triggers on the very first boot. Lockpick detects the
-// request flag, dumps keys to sd:/switch/prod.keys, removes the flag and
-// reboots back to hekate; the next boot finds the keys and skips this.
+// Refresh once per bundled Lockpick revision, including existing key sets.
+#define AUTOKEYS_VERSION "2.0.1-97c2755-v1"
+
+static bool _autokeys_marker_matches(const char *path)
+{
+	FIL fp;
+	char version[sizeof(AUTOKEYS_VERSION)] = {0};
+	UINT read = 0;
+	if (f_open(&fp, path, FA_READ) != FR_OK)
+		return false;
+	FRESULT result = f_read(&fp, version, sizeof(version), &read);
+	f_close(&fp);
+	return result == FR_OK && read == sizeof(AUTOKEYS_VERSION) - 1 &&
+		!memcmp(version, AUTOKEYS_VERSION, read);
+}
+
 static void _autokeys_run()
 {
-	// Keys already present -> nothing to do. Clear a leftover attempt marker.
-	if (!f_stat("switch/prod.keys", NULL))
-	{
-		f_unlink("bootloader/sys/autokeys.attempt");
+	if (!_autokeys_enabled() || f_stat("bootloader/sys/lockpick.bin", NULL))
 		return;
+
+	FILINFO keys;
+	if ((!f_stat("switch/prod.keys", &keys) && keys.fsize) ||
+		(!f_stat("switch/dev.keys", &keys) && keys.fsize))
+	{
+		if (_autokeys_marker_matches("bootloader/sys/autokeys.version"))
+		{
+			f_unlink("bootloader/sys/autokeys.attempt");
+			f_unlink("bootloader/sys/autokeys.request");
+			return;
+		}
 	}
 
-	// A previous attempt did not produce keys (Lockpick failed or was interrupted).
-	// Do not chainload it again on every boot: that would be a reboot loop.
-	// Delete bootloader/sys/autokeys.attempt to retry.
-	if (!f_stat("bootloader/sys/autokeys.attempt", NULL))
+	// A failed or interrupted attempt must never reboot in a loop.
+	// Removing this marker explicitly retries the current version.
+	if (_autokeys_marker_matches("bootloader/sys/autokeys.attempt"))
 		return;
 
-	// Bundled Lockpick build is required.
-	if (f_stat("bootloader/sys/lockpick.bin", NULL))
-		return;
-
-	// Honor [config] autokeys=0.
-	if (!_autokeys_enabled())
-		return;
-
-	// Remember the attempt, then signal the bundled Lockpick to auto-dump and reboot back.
 	FIL fp;
-	if (f_open(&fp, "bootloader/sys/autokeys.attempt", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
-		f_close(&fp);
-	if (f_open(&fp, "bootloader/sys/autokeys.request", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
-		f_close(&fp);
+	UINT written = 0;
+	if (f_open(&fp, "bootloader/sys/autokeys.attempt", FA_CREATE_ALWAYS | FA_WRITE) != FR_OK)
+		return;
+	FRESULT result = f_write(&fp, AUTOKEYS_VERSION, sizeof(AUTOKEYS_VERSION) - 1, &written);
+	FRESULT closed = f_close(&fp);
+	if (result != FR_OK || closed != FR_OK || written != sizeof(AUTOKEYS_VERSION) - 1)
+		return;
+	if (f_open(&fp, "bootloader/sys/autokeys.request", FA_CREATE_ALWAYS | FA_WRITE) != FR_OK)
+		return;
+	if (f_close(&fp) != FR_OK)
+		return;
 
 	gfx_clear_grey(0x1B);
 	gfx_con_setpos(0, 0);
-	gfx_printf("%kRyazhenka:%k dumping keys via Lockpick...\nThe console will reboot once.\n",
+	gfx_printf("%kRyazhenka:%k updating keys via Lockpick...\nThe console will reboot once.\n",
 		0xFFFFDD00, 0xFFCCCCCC);
-
-	// Chainload Lockpick (does not return on success).
 	_launch_payload("bootloader/sys/lockpick.bin", false, true);
+	f_unlink("bootloader/sys/autokeys.request");
 }
 
 static void _auto_launch()

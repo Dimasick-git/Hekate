@@ -1,52 +1,127 @@
-diff -ruN pristine/source/keys/keys.c patched/source/keys/keys.c
---- a/source/keys/keys.c	2026-04-23 19:04:36.000000000 +0000
-+++ b/source/keys/keys.c	2026-06-06 13:16:13.519899665 +0000
-@@ -56,6 +56,7 @@
+diff --git a/Makefile b/Makefile
+index fde91da..e535ac8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -52,7 +52,7 @@ CUSTOMDEFINES += -DGFX_INC=$(GFX_INC) -DFFCFG_INC=$(FFCFG_INC)
+ WARNINGS := -Wall -Wno-array-bounds -Wno-stringop-overread -Wno-stringop-overflow
+ 
+ ARCH := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
+-CFLAGS = $(ARCH) -O2 -g -nostdlib -ffunction-sections -fdata-sections -fomit-frame-pointer -fno-inline -std=gnu11 $(WARNINGS) $(CUSTOMDEFINES)
++CFLAGS = $(ARCH) -Os -g -nostdlib -ffunction-sections -fdata-sections -fomit-frame-pointer -fno-inline -std=gnu11 $(WARNINGS) $(CUSTOMDEFINES)
+ LDFLAGS = $(ARCH) -nostartfiles -lgcc -Wl,--nmagic,--gc-sections -Xlinker --defsym=IPL_LOAD_ADDR=$(IPL_LOAD_ADDR)
+ 
+ LDRDIR := $(wildcard loader)
+@@ -70,12 +70,12 @@ all: $(OUTPUTDIR)/$(TARGET).bin $(LDRDIR)
+ 	$(eval BIN_SIZE = $(shell wc -c < $(OUTPUTDIR)/$(TARGET)_unc.bin))
+ 	@echo $(BIN_SIZE)" Bytes"
+ 	@echo "Uncompr Max:  140288 Bytes + 3 KiB BSS"
+-	@if [ ${BIN_SIZE} -gt 140288 ]; then echo "\e[1;33mUncompr size exceeds limit!\e[0m"; fi
++	@if [ ${BIN_SIZE} -gt 140288 ]; then echo "Uncompressed size exceeds limit!"; exit 1; fi
+ 	@echo -n "Payload size: "
+ 	$(eval BIN_SIZE = $(shell wc -c < $(OUTPUTDIR)/$(TARGET).bin))
+ 	@echo $(BIN_SIZE)" Bytes"
+ 	@echo "Payload Max:  126296 Bytes"
+-	@if [ ${BIN_SIZE} -gt 126296 ]; then echo "\e[1;33mPayload size exceeds limit!\e[0m"; fi
++	@if [ ${BIN_SIZE} -gt 126296 ]; then echo "Payload size exceeds limit!"; exit 1; fi
+ 	@echo "--------------------------------------"
+ 
+ clean: $(TOOLS)
+diff --git a/source/keys/keys.c b/source/keys/keys.c
+index 8cd6c38..81432e0 100644
+--- a/source/keys/keys.c
++++ b/source/keys/keys.c
+@@ -59,6 +59,8 @@ extern hekate_config h_cfg;
  static u32 _key_count = 0, _titlekey_count = 0;
  static u32 start_time, end_time;
  u32 color_idx = 0;
-+bool autokeys_silent = false; // Ryazhenka: skip button prompts in autokeys mode.
++bool autokeys_silent = false;
++bool autokeys_saved = false;
  
  static void _save_key(const char *name, const void *data, u32 len, char *outbuf) {
      if (!key_exists(data))
-@@ -834,6 +835,9 @@
+@@ -753,6 +755,9 @@ static void _save_keys_to_sd(key_storage_t *keys, titlekey_buffer_t *titlekey_bu
+ 
+     FILINFO fno;
+     if (!sd_save_to_file(text_buffer, strlen(text_buffer), keyfile_path) && !f_stat(keyfile_path, &fno)) {
++        if (fno.fsize && key_exists(keys->master_key[0]) &&
++            is_dev == (fuse_read_hw_state() == FUSE_NX_HW_STATE_DEV))
++            autokeys_saved = true;
+         gfx_printf("%kWrote %d bytes to %s\n", colors[(color_idx++) % 6], (u32)fno.fsize, keyfile_path);
+     } else {
+         EPRINTF("Unable to save keys to SD.");
+@@ -931,6 +936,7 @@ void dump_keys() {
+ 
+     start_time = get_tmr_us();
+ 
++    autokeys_saved = false;
+     _derive_keys();
+ 
+     emummc_load_cfg();
+@@ -942,6 +948,8 @@ void dump_keys() {
      }
  
      minerva_change_freq(FREQ_800);
-+    // Ryazhenka: in autokeys mode, skip the prompt and return immediately.
 +    if (autokeys_silent)
-+    	return;
++        return;
      gfx_printf("\n%kPress VOL+ to save a screenshot\n or another button to return to the menu.\n\n", colors[(color_idx++) % 6]);
      u8 btn = btn_wait();
      if (btn == BTN_VOL_UP) {
-diff -ruN pristine/source/keys/keys.h patched/source/keys/keys.h
---- a/source/keys/keys.h	2026-04-23 19:04:36.000000000 +0000
-+++ b/source/keys/keys.h	2026-06-06 13:16:13.520165804 +0000
-@@ -44,6 +44,7 @@
+diff --git a/source/keys/keys.h b/source/keys/keys.h
+index f8a84c1..de63c94 100644
+--- a/source/keys/keys.h
++++ b/source/keys/keys.h
+@@ -44,6 +44,8 @@
  // save key family with different name than variable
  #define SAVE_KEY_FAMILY_VAR(name, varname, start) _save_key_family(#name, varname, start, ARRAY_SIZE(varname), sizeof(*(varname)), text_buffer)
  
-+extern bool autokeys_silent; // Ryazhenka: silent autokeys mode.
++extern bool autokeys_silent;
++extern bool autokeys_saved;
  void dump_keys();
  int save_mariko_partial_keys(u32 start, u32 count, bool append);
  void derive_amiibo_keys();
-diff -ruN pristine/source/main.c patched/source/main.c
---- a/source/main.c	2026-04-23 19:04:36.000000000 +0000
-+++ b/source/main.c	2026-06-06 13:16:13.519430134 +0000
-@@ -430,6 +430,16 @@
+diff --git a/source/main.c b/source/main.c
+index 368b820..045fa5c 100644
+--- a/source/main.c
++++ b/source/main.c
+@@ -430,6 +430,20 @@ void ipl_main()
  	h_cfg.emummc_force_disable = emu_cfg.sector == 0 && !emu_cfg.path;
  	emu_cfg.enabled = !h_cfg.emummc_force_disable;
  
-+	// Ryazhenka autokeys: if hekate requested an automatic key dump, dump the
-+	// keys silently (no button prompts) and reboot straight back to hekate.
++	// Ryazhenka: consume the request before dumping, then return without prompts.
 +	if (!f_stat("bootloader/sys/autokeys.request", NULL))
 +	{
 +		f_unlink("bootloader/sys/autokeys.request");
 +		autokeys_silent = true;
 +		dump_keys();
++		// Mark completion only after this invocation saved the console's key set.
++		if (autokeys_saved)
++			sd_save_to_file("2.0.1-97c2755-v1", sizeof("2.0.1-97c2755-v1") - 1,
++				"bootloader/sys/autokeys.version");
 +		launch_payload("bootloader/update.bin", false);
++		autokeys_silent = false; // Chainloading may fail; keep the manual menu usable.
 +	}
 +
  	// Grey out emummc option if not present.
  	if (h_cfg.emummc_force_disable)
  	{
+diff --git a/source/storage/nx_sd.c b/source/storage/nx_sd.c
+index f2cec2f..0550728 100644
+--- a/source/storage/nx_sd.c
++++ b/source/storage/nx_sd.c
+@@ -226,8 +226,12 @@ int sd_save_to_file(void *buf, u32 size, const char *filename)
+ 		return res;
+ 	}
+ 
+-	f_write(&fp, buf, size, NULL);
+-	f_close(&fp);
+-
+-	return 0;
++	UINT written = 0;
++	res = f_write(&fp, buf, size, &written);
++	FRESULT closed = f_close(&fp);
++	if (res)
++		return res;
++	if (written != size)
++		return FR_DISK_ERR;
++	return closed;
+ }
